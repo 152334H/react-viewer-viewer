@@ -130,6 +130,7 @@ const ViewerButMoreSimple = ({setShow, setActiveIndex, activeIndex, imgs, addedB
   <Viewer visible={true} zoomSpeed={0.1}
     drag={true} 
     noResetZoomAfterChange={true}
+    noLimitInitializationSize={true}
     maxScale={500}
     onClose={() => setShow(false)}
     images={imgs}
