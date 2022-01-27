@@ -1,14 +1,18 @@
-# How can I use this?
+# a homemade tauri (?) native application (??)
+
+## How can I use this?
 
 The right question to ask is, "_Why_ should I use this?"
 
-# Why should I use this?
+## Why should I use this?
 
-You should not. As the project description notes, this project is a personal exercise and will be filled with unintentional examples of terrible development practices. I am only publishing this for the free Github Action hours I want to use to compile native Windows binaries.
+You should not. **Please do not try to run this project**. As the project description notes, this project is a personal exercise and will be filled with unintentional examples of terrible development practices. I am only publishing this for the free Github Action hours I want to use to compile native Windows binaries.
 
-# But I really want to, though.
+## But I really want to, though.
 
 Okay, but don't say I didn't warn you.
+
+---
 
 The first step is to clone this repository AND my fork of [react-viewer](https://github.com/152334H/react-viewer) into separate directories, with your filesystem looking like this:
 
