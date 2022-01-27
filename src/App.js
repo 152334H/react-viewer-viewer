@@ -12,6 +12,7 @@ import IconButton from '@mui/material/Button';
 import Input from '@mui/material/Input';
 import CssBaseline from '@mui/material/CssBaseline';
 import {PhotoCamera, Download, Upload, Collections} from '@mui/icons-material';
+import {createTheme, ThemeProvider} from '@mui/material/styles'
 
 const IconLocal = ({type}) => { // cribbed from react-viewer/Icon.tsx
   const prefixCls = 'react-viewer-icon'
@@ -176,8 +177,12 @@ function RealApp() {
 }
 
 const App = () => (<React.Fragment>
+  <ThemeProvider theme={createTheme({
+      palette: { mode : 'dark' }
+  })}>
     <CssBaseline/>
     <RealApp/>
+  </ThemeProvider>
 </React.Fragment>)
 
 export default App
