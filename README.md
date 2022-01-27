@@ -38,4 +38,4 @@ Anyway, once react-viewer compiles, you can move to react-viewer-viewer to try o
 
 #### Great, now how do I turn that webpage into a native binary?
 
-I have no idea. The next twenty commits or so in the `.github/` folder will be my discovery process for that.
+You need to run `npm run tauri build` basically. I don't think the binary works, though. The one I compiled with Github Actions is definitely broken.
