@@ -8,10 +8,8 @@ jobs:
   publish-tauri:
     strategy:
       fail-fast: false
-      matrix:
-        platform: [windows-latest]
 
-    runs-on: ${{ matrix.platform }}
+    runs-on: windows-latest
     steps:
     - uses: actions/checkout@v2
     - name: setup node
@@ -23,11 +21,14 @@ jobs:
       with:
         toolchain: stable
     - name: download and install the other thing
-      run:
+      run: |
         cd .. && git clone https://github.com/152334H/react-viewer
         cd react-viewer && npm install && npm build && cd ../react-viewer-viewer
+        dir ..
     - name: install app dependencies and build it
-      run: yarn && yarn build
+      run: | 
+        npm install
+        npm run tauri build
     - uses: tauri-apps/tauri-action@v0
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
