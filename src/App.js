@@ -158,7 +158,7 @@ function RealApp() {
         )))
       )}/>
       <SaveAll imgs={imgs}/>
-      <UploadAll setImgs={updateImgs}/>
+      <UploadAll setImgs={imgs => updateImgs(()=>imgs)}/>
       {imgs.length>0 && <IconButtonSimple
         icon={<Collections/>}
         onClick={() => setShow(true)}
