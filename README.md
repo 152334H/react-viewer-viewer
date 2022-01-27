@@ -1,70 +1,37 @@
-# Getting Started with Create React App
+# How can I use this?
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+The right question to ask is, "_Why_ should I use this?"
 
-## Available Scripts
+# Why should I use this?
 
-In the project directory, you can run:
+You should not. As the project description notes, this project is a personal exercise and will be filled with unintentional examples of terrible development practices. I am only publishing this for the free Github Action hours I want to use to compile native Windows binaries.
 
-### `npm start`
+# But I really want to, though.
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+Okay, but don't say I didn't warn you.
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+The first step is to clone this repository AND my fork of [react-viewer](https://github.com/152334H/react-viewer) into separate directories, with your filesystem looking like this:
 
-### `npm test`
+```sh
+$ tree ~ -L 1 | grep react
+├── react-viewer
+├── react-viewer-viewer
+```
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+Then, you will need to build `react-viewer` with `node < 17.0.0`. I'm not sure why it doesn't work on the latest npm version and the webdevs I know were unable/unavailable to explain it too.
 
-### `npm run build`
+```sh
+~/react-viewer$ nvm use lts/gallium && npm install && npm build
+```
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+If you're wondering how to test the application, there is no testing. I broke the test suite for react-viewer because I had to remove a package (the package-lock.json link was a 404) to get it to compile locally successfully.
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+Anyway, once react-viewer compiles, you can move to react-viewer-viewer to try out the thing on development mode:
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+```sh
+~/react-viewer-viewer$ nvm use v17.3.0 && npm install && npm start
+```
 
-### `npm run eject`
+#### Great, now how do I turn that webpage into a native binary?
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
-
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
-
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
-
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
-
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
-
-### Code Splitting
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+I have no idea. The next twenty commits or so in the `.github/` folder will be my discovery process for that.
