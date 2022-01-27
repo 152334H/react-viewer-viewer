@@ -25,6 +25,7 @@ jobs:
         dir && dir ..
         cd .. && git clone https://github.com/152334H/react-viewer
         cd react-viewer && npm install && npm build && cd ../react-viewer-viewer
+        dir ..
     - name: install app dependencies and build it
       run: npm run tauri build
     - uses: tauri-apps/tauri-action@v0
