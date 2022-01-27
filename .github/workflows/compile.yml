@@ -21,7 +21,7 @@ jobs:
       with:
         toolchain: stable
     - name: download and install the other thing
-      run:
+      run: |
         cd .. && git clone https://github.com/152334H/react-viewer
         cd react-viewer && npm install && npm build && cd ../react-viewer-viewer
     - name: install app dependencies and build it
