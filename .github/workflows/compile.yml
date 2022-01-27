@@ -22,10 +22,11 @@ jobs:
         toolchain: stable
     - name: download and install the other thing
       run: |
+        dir && dir ..
         cd .. && git clone https://github.com/152334H/react-viewer
         cd react-viewer && npm install && npm build && cd ../react-viewer-viewer
     - name: install app dependencies and build it
-      run: yarn && yarn build
+      run: npm run tauri build
     - uses: tauri-apps/tauri-action@v0
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
