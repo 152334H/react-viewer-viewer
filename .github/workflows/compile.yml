@@ -15,20 +15,18 @@ jobs:
     - name: setup node
       uses: actions/setup-node@v1
       with:
-        node-version: 12
+        node-version: 16
     - name: install Rust stable
       uses: actions-rs/toolchain@v1
       with:
         toolchain: stable
-    - name: download and install the other thing
+    - name: download and install the forked version of react-viewer
       run: |
         cd .. && git clone https://github.com/152334H/react-viewer
         cd react-viewer && npm install && npm build && cd ../react-viewer-viewer
         dir ..
-    - name: install app dependencies and build it
-      run: | 
-        npm install
-        npm run tauri build
+    - name: install app dependencies
+      run: npm install
     - uses: tauri-apps/tauri-action@v0
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -38,3 +36,4 @@ jobs:
         releaseBody: "See the assets to download this version and install."
         releaseDraft: true
         prerelease: false
+        includeDebug: true
