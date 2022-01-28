@@ -12,10 +12,22 @@ jobs:
     runs-on: windows-latest
     steps:
     - uses: actions/checkout@v2
+    - uses: actions/checkout@v2
+      with:
+        repository: 152334H/react-viewer
+    - name: testing
+      run: |
+        dir
+        cd ..
+        dir
+        exit 1
     - name: setup node
       uses: actions/setup-node@v1
       with:
         node-version: 16
+        cache: 'npm'
+        cache-dependency-path: |
+          package-lock.json
     - name: install Rust stable
       uses: actions-rs/toolchain@v1
       with:
