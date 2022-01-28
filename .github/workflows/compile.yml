@@ -18,36 +18,38 @@ jobs:
       with:
         path: react-viewer
         repository: 152334H/react-viewer
-    - name: testing
-      run: |
-        dir
-        cd ..
-        dir
-        cd ..
-        dir
-        exit 1
+      # at this point, at D:\a\react-viewer-viewer\react-viewer-viewer. The two repos are in cwd.
     - name: setup node
       uses: actions/setup-node@v1
       with:
         node-version: 16
         cache: 'npm'
         cache-dependency-path: |
-          package-lock.json
+          react-viewer/package-lock.json
+          react-viewer-viewer/package-lock.json
     - name: install Rust stable
       uses: actions-rs/toolchain@v1
       with:
         toolchain: stable
-    - name: download and install the forked version of react-viewer
-      run: |
-        cd .. && git clone --depth=1 https://github.com/152334H/react-viewer
-        cd react-viewer && npm install && npm run build && cd ../react-viewer-viewer
-        dir ..
-    - name: install app dependencies
+    - name: install & build forked react-viewer
+      run: cd react-viewer && npm install && npm run build && cd ..
+    - name: install viewer-viewer dependencies
       run: npm install
+      # hopefully we can speed up future GAs by doing this
+      # also note that at this point the cwd is the main repo
+    - uses: actions/cache@v2
+      with:
+        path: |
+          %USERPROFILE%/.cargo/bin/
+          %USERPROFILE%/.cargo/registry/index/
+          %USERPROFILE%/.cargo/registry/cache/
+          %USERPROFILE%/.cargo/git/db/
+          src-tauri/target/
+        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
     - uses: tauri-apps/tauri-action@v0
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
+      with: # TODO: figure out how to set version correctly
         tagName: app-v__VERSION__ # the action automatically replaces \_\_VERSION\_\_ with the app version
         releaseName: "App v__VERSION__"
         releaseBody: "See the assets to download this version and install."
