@@ -154,6 +154,7 @@ function RealApp() {
   return (<div className="App">
     <header className="App-header">
       <h1>test</h1>
+      <h5>zoom level: {window.devicePixelRatio}</h5>
       <Uploader addImgs={ls => updateImgs(_ => imgs
         .concat(ls.map((i,ind) => (
           {src: i, alt: imgs.length+ind, scale: 1}
