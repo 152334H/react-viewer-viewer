@@ -12,11 +12,16 @@ jobs:
     runs-on: windows-latest
     steps:
     - uses: actions/checkout@v2
+      with:
+        path: react-viewer-viewer
     - uses: actions/checkout@v2
       with:
+        path: react-viewer
         repository: 152334H/react-viewer
     - name: testing
       run: |
+        dir
+        cd ..
         dir
         cd ..
         dir
