@@ -20,7 +20,7 @@ jobs:
         repository: 152334H/react-viewer
       # at this point, at D:\a\react-viewer-viewer\react-viewer-viewer. The two repos are in cwd.
     - name: setup node
-      uses: actions/setup-node@v1
+      uses: actions/setup-node@v2
       with:
         node-version: 16
         cache: 'npm'
