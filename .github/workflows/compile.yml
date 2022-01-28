@@ -34,7 +34,7 @@ jobs:
     - name: install & build forked react-viewer
       run: cd react-viewer && npm install && npm run build && cd ..
     - name: install viewer-viewer dependencies
-      run: npm install
+      run: cd react-viewer-viewer && npm install
       # hopefully we can speed up future GAs by doing this
       # also note that at this point the cwd is the main repo
     - uses: actions/cache@v2
