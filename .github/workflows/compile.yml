@@ -32,9 +32,9 @@ jobs:
       with:
         toolchain: stable
     - name: install & build forked react-viewer
-      run: cd react-viewer && npm install && npm run build && cd ..
+      run: cd react-viewer && npm ci && npm run build && cd ..
     - name: install viewer-viewer dependencies
-      run: cd react-viewer-viewer && npm install && cd ..
+      run: cd react-viewer-viewer && npm ci && cd ..
       # hopefully we can speed up future GAs by doing this
     - uses: actions/cache@v2
       with:
