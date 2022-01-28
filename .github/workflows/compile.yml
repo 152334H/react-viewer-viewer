@@ -23,7 +23,7 @@ jobs:
     - name: download and install the forked version of react-viewer
       run: |
         cd .. && git clone https://github.com/152334H/react-viewer
-        cd react-viewer && npm install && npm build && cd ../react-viewer-viewer
+        cd react-viewer && npm install && npm run build && cd ../react-viewer-viewer
         dir ..
     - name: install app dependencies
       run: npm install
