@@ -1,0 +1,34 @@
+name: Deploy to github pages
+on: 
+  push:
+    branches:
+      master
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          path: react-viewer-viewer
+      - uses: actions/checkout@v2
+        with:
+          path: react-viewer
+          repository: 152334H/react-viewer
+      - name: setup node
+        uses: actions/setup-node@v2
+        with:
+          node-version: 16
+          cache: 'npm'
+          cache-dependency-path: |
+            react-viewer/package-lock.json
+            react-viewer-viewer/package-lock.json
+      - name: install & build forked react-viewer
+        run: cd react-viewer && npm ci && npm run build && cd ..
+      - name: install & build viewer-viewer
+        run: cd react-viewer-viewer && npm ci && npm run bulid && cd ..
+      - name: Deploy to GH pages
+        uses: JamesIves/github-pages-deploy-action@4.0.0
+        with:
+          branch: gh-pages # The branch the action should deploy to.
+          folder: build
+          workspace: react-viewer-viewer/
