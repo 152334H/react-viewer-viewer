@@ -11,8 +11,10 @@ import {saveAs} from 'file-saver'
 import IconButton from '@mui/material/Button';
 import Input from '@mui/material/Input';
 import CssBaseline from '@mui/material/CssBaseline';
-import {PhotoCamera, Download, Upload, Collections} from '@mui/icons-material';
+import {PhotoCamera, Download, Upload, Collections, Archive} from '@mui/icons-material';
 import {createTheme, ThemeProvider} from '@mui/material/styles'
+
+import {invoke} from '@tauri-apps/api/tauri'
 
 const IconLocal = ({type}) => { // cribbed from react-viewer/Icon.tsx
   const prefixCls = 'react-viewer-icon'
@@ -72,23 +74,39 @@ const UploadAll = ({setImgs}) => {
     icon={<Upload/>} onChange={onChange}/>
 }
 
+const compressedImgs = imgs => {
+  let dataURLs = [];
+  let imgStates = imgs.map(i => {
+    let ind = dataURLs.findIndex(d => d === i.src)
+    if (ind === -1) {
+      dataURLs.push(i.src)
+      ind = dataURLs.length - 1
+    }
+    return {...i, src: ind}
+  });
+  return {dataURLs, imgStates}
+}
+
+
 // button 3: save image viewer state to pickle (image-$timestamp.json)
 const SaveAll = ({imgs}) => {
   const saveAll = () => {
-    let dataURLs = [];
-    let imgStates = imgs.map(i => {
-      let ind = dataURLs.findIndex(d => d === i.src)
-      if (ind === -1) {
-        dataURLs.push(i.src)
-        ind = dataURLs.length - 1
-      }
-      return {...i, src: ind}
-    });
-    saveAs(new Blob([JSON.stringify({dataURLs, imgStates})],
+    saveAs(new Blob([JSON.stringify(compressedImgs(imgs))],
       {type: "text/json;charset=utf-8"}),
       `images-${Date.now()}.json`)
   }
   return <IconButtonSimple icon={<Download/>} onClick={saveAll}/>
+}
+
+// button 4: save image viewer state to a bunch of images in a zip (TODO)
+const CompileButton = ({imgs}) => {
+  if (!('rpc' in window)) return <></>; // TODO: find the correct way to check for Tauri
+  return <IconButtonSimple icon={<Archive/>} onClick={() => {
+    // this will be really slow!
+    let res = invoke('compile_images', {imgStates: imgs, zoom: window.devicePixelRatio});
+    saveAs(new Blob([res], {type: "application/zip"}),
+      `images-${Date.now()}.zip`)
+  }}/>
 }
 
 // additional toolbar buttons.
@@ -160,12 +178,13 @@ function RealApp() {
           {src: i, alt: imgs.length+ind, scale: 1}
         )))
       )}/>
-      <SaveAll imgs={imgs}/>
       <UploadAll setImgs={imgs => updateImgs(()=>imgs)}/>
-      {imgs.length>0 && <IconButtonSimple
-        icon={<Collections/>}
-        onClick={() => setShow(true)}
-      />}
+      {imgs.length>0 && (()=>(<>
+        <IconButtonSimple icon={<Collections/>}
+          onClick={() => setShow(true)}/>
+        <SaveAll imgs={imgs}/>
+        <CompileButton imgs={imgs}/>
+      </>))()}
       {show && <ViewerButMoreSimple
         imgs={imgs}
         setShow={setShow}
