@@ -25,7 +25,7 @@ jobs:
       - name: install & build forked react-viewer
         run: cd react-viewer && npm ci && npm run build && cd ..
       - name: install & build viewer-viewer
-        run: cd react-viewer-viewer && npm ci && && npm run && npm run bulid && cd ..
+        run: cd react-viewer-viewer && npm ci && npm run && npm run bulid && cd ..
       - name: Deploy to GH pages
         uses: JamesIves/github-pages-deploy-action@4.0.0
         with:
