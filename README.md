@@ -24,6 +24,12 @@ Particularly, you **must** use `node < 17.0.0` for step 1. I'm not sure why it d
 
 If you're wondering how to test the application, there is no testing. I broke the test suite for react-viewer because I had to remove a package in react-viewer (the package-lock.json link was a 404) to get it to compile locally successfully.
 
-#### Great, now how do I turn that webpage into a native binary?
+### Great, now how do I show that on my desktop as a native window?
 
-You need to run `npm run tauri build` basically. I don't think the binary works, though. The one I compiled with Github Actions is definitely broken.
+1. switch to the `release` branch because `package.json` is slightly different for tauri compilation here.
+2. run `npm run tauri dev`.
+
+### That sounds stupid. My computer doesn't even have Rust.
+
+There are builds available in the [releases](https://github.com/152334H/react-viewer-viewer/releases) page. Sometimes they even work. I would suggest not running arbitrary code compiled by yours truly, though.
+
