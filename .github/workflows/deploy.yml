@@ -30,4 +30,5 @@ jobs:
         uses: JamesIves/github-pages-deploy-action@4.0.0
         with:
           branch: gh-pages # The branch the action should deploy to.
-          folder: react-viewer-viewer/
+          folder: react-viewer-viewer/build
+          workspace: react-viewer-viewer/
