@@ -28,7 +28,7 @@ jobs:
         run: cd react-viewer-viewer && npm ci && npm run build && cd ..
       - name: Deploy to GH pages
         uses: JamesIves/github-pages-deploy-action@4.0.0
+        working-directory: ./react-viewer-viewer
         with:
           branch: gh-pages # The branch the action should deploy to.
-          folder: react-viewer-viewer/build
-          workspace: react-viewer-viewer/
+          folder: build
