@@ -12,29 +12,17 @@ jobs:
     runs-on: windows-latest
     steps:
     - uses: actions/checkout@v2
-      with:
-        path: react-viewer-viewer
-    - uses: actions/checkout@v2
-      with:
-        path: react-viewer
-        repository: 152334H/react-viewer
-      # at this point, at D:\a\react-viewer-viewer\react-viewer-viewer. The two repos are in cwd.
     - name: setup node
       uses: actions/setup-node@v2
       with:
         node-version: 16
         cache: 'npm'
-        cache-dependency-path: |
-          react-viewer/package-lock.json
-          react-viewer-viewer/package-lock.json
     - name: install Rust stable
       uses: actions-rs/toolchain@v1
       with:
         toolchain: stable
-    - name: install & build forked react-viewer
-      run: cd react-viewer && npm ci && npm run build && cd ..
     - name: install viewer-viewer dependencies
-      run: cd react-viewer-viewer && npm ci && cd ..
+      run: npm ci
       # hopefully we can speed up future GAs by doing this
     - uses: actions/cache@v2
       with:
@@ -55,4 +43,3 @@ jobs:
         releaseDraft: true
         prerelease: false
         includeDebug: true
-        projectPath: './react-viewer-viewer'
