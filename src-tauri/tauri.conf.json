@@ -1,11 +1,7 @@
 {
   "package": {
     "productName": "react-viewer-viewer",
-<<<<<<< HEAD
     "version": "0.2.2"
-=======
-    "version": "0.2.1"
->>>>>>> 9c18eea257291508138ec1201373b08a448e15ea
   },
   "build": {
     "distDir": "../build",
