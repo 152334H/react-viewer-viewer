@@ -4,11 +4,11 @@
 )]
 
 mod lib;
-use lib::{JSON_viewerstate, test_thing};
+use lib::{JSONViewerState, viewer_to_zip};
 
 #[tauri::command]
-fn compile_images(json: JSON_viewerstate) -> i32 {
-    test_thing(json)
+fn compile_images(json: JSONViewerState) -> Result<Vec<u8>, String> {
+    viewer_to_zip(json).map_err(|e| e.to_string())
 }
 
 fn main() {
