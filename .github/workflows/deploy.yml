@@ -8,13 +8,21 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - name: setup node & cache
-        uses: actions/setup-node@v2
+      - uses: actions/setup-node@v2
         with:
           node-version: 16
           cache: 'npm'
-      - name: install & build viewer-viewer
-        run: npm ci && npm run build
+      - name: Cache Node Modules
+        id: node-cache
+        uses: actions/cache@v2
+        with:
+          path: node_modules
+          key: node-modules-${{ hashFiles('package-lock.json') }}
+      - name: Install Dependencies
+        if: steps.node-cache.outputs.cache-hit != 'true'
+        run: npm install
+      - name: Build viewer-viewer
+        run: npm run build
       - name: Deploy to GH pages
         uses: JamesIves/github-pages-deploy-action@4.0.0
         with:
