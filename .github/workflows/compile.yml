@@ -11,9 +11,9 @@ jobs:
 
     runs-on: windows-latest
     steps:
-    - name: TESTING ${{ env.GITHUB_ENV }} ${{env.USERPROFILE}}
+    - name: dump ${{ env }}
       run: |
-        echo $env:GITHUB_ENV $env:USERPROFILE
+        echo '${{ toJSON(env) }}'
         exit 1
 
     - uses: actions/checkout@v2
