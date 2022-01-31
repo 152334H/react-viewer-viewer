@@ -15,6 +15,7 @@ fn compile_images(json: JSONViewerState) -> Result<Vec<u8>, String> {
 
 fn main() {
   tauri::Builder::default()
+    .invoke_handler(tauri::generate_handler![compile_images])
     .run(tauri::generate_context!())
     .expect("error while running tauri application");
 }

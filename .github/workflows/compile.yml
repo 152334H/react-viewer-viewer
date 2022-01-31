@@ -12,25 +12,33 @@ jobs:
     runs-on: windows-latest
     steps:
     - uses: actions/checkout@v2
+    # get nodejs stuff
     - name: setup node
       uses: actions/setup-node@v2
       with:
         node-version: 16
         cache: 'npm'
+    - name: Cache Node Modules
+      id: node-cache
+      uses: actions/cache@v2
+      with:
+        path: node_modules
+        key: node-modules-${{ hashFiles('package-lock.json') }}
+    - name: Install viewer-viewer Dependencies
+      if: steps.node-cache.outputs.cache-hit != 'true'
+      run: npm install
+    # js stuff is now installed. move on to rust stuff
     - name: install Rust stable
       uses: actions-rs/toolchain@v1
       with:
         toolchain: stable
-    - name: install viewer-viewer dependencies
-      run: npm ci
-      # hopefully we can speed up future GAs by doing this
     - uses: actions/cache@v2
       with:
-        path: |
-          %USERPROFILE%/.cargo/bin/
-          %USERPROFILE%/.cargo/registry/index/
-          %USERPROFILE%/.cargo/registry/cache/
-          %USERPROFILE%/.cargo/git/db/
+        path: | # not sure how to make this work
+          ${{env.USERPROFILE}}/.cargo/bin/
+          ${{env.USERPROFILE}}/.cargo/registry/index/
+          ${{env.USERPROFILE}}/.cargo/registry/cache/
+          ${{env.USERPROFILE}}/.cargo/git/db/
           src-tauri/target/
         key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
     - uses: tauri-apps/tauri-action@v0
