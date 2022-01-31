@@ -1,6 +1,6 @@
 [package]
 name = "app"
-version = "0.1.2"
+version = "0.2.0"
 description = "A Tauri App"
 authors = ["you"]
 license = ""
@@ -21,6 +21,8 @@ tauri = { version = "1.0.0-beta.8", features = ["api-all"] }
 #serde_derive = "1.0"
 base64 = "0.13"
 image = "0.23"
+rayon = "1.5"
+zip = "0.5"
 
 [features]
 default = [ "custom-protocol" ]
