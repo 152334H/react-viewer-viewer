@@ -105,8 +105,13 @@ const CompileButton = ({imgs}) => {
     // this will be really slow!
     invoke('compile_images',
       {imgStates: imgs, zoom: window.devicePixelRatio}
-    ).then(res => saveAs(new Blob([res], {type: "application/zip"}),
+    ).then(res => {
+        console.log("success");
+        console.log(res);
+        console.log(
+        saveAs(new Blob([res], {type: "application/zip"}),
       `images-${Date.now()}.zip`)
+        )}
     ).catch(e => {
         window.alert('something went wrong in tauri command "compile_images"');
         console.error(e)

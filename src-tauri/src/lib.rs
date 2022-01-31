@@ -142,6 +142,7 @@ impl Into<Img> for ImgState {
 }
 
 fn imgs_to_zip(imgs: Vec<Img>) -> Result<Vec<u8>, Box<dyn Error>> {
+    println!("zipping up stuff");
     let mut buf = Vec::new();
     let mut zip = ZipWriter::new(Cursor::new(&mut buf));
     // this cannot be parallelized because the zip writer is not thread-safe
@@ -159,7 +160,9 @@ fn imgs_to_zip(imgs: Vec<Img>) -> Result<Vec<u8>, Box<dyn Error>> {
 }
 
 pub fn viewer_to_zip(json: JSONViewerState) -> Result<Vec<u8>, Box<dyn Error>> {
+    println!("converting json");
     let ls: Vec<ImgState> = json.try_into()?; // sequential
+    println!("going parallel");
     imgs_to_zip( // sequential
         ls.into_par_iter().map(|is| is.into()).collect() // parallel
     )
