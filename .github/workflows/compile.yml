@@ -11,8 +11,10 @@ jobs:
 
     runs-on: windows-latest
     steps:
-    - name: TESTING $env:GITHUB_ENV $env:USERPROFILE
-      run: exit 1
+    - name: TESTING ${{ env.GITHUB_ENV }} ${{env.USERPROFILE}}
+      run: |
+        echo $env:GITHUB_ENV $env:USERPROFILE
+        exit 1
 
     - uses: actions/checkout@v2
     # get nodejs stuff
