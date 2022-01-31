@@ -103,9 +103,9 @@ const CompileButton = ({imgs}) => {
   if (!('rpc' in window)) return <></>; // TODO: find the correct way to check for Tauri
   return <IconButtonSimple icon={<Archive/>} onClick={() => {
     // this will be really slow!
-    invoke('compile_images',
-      {imgStates: imgs, zoom: window.devicePixelRatio}
-    ).then(res => {
+    invoke('compile_images', {json:
+        {imgStates: imgs, zoom: window.devicePixelRatio}
+    }).then(res => {
         console.log("success");
         console.log(res);
         console.log(
