@@ -147,12 +147,14 @@ fn imgs_to_zip(imgs: Vec<Img>) -> Result<Vec<u8>, Box<dyn Error>> {
     let mut zip = ZipWriter::new(Cursor::new(&mut buf));
     // this cannot be parallelized because the zip writer is not thread-safe
     for (i,im) in imgs.into_iter().enumerate() {
-        zip.start_file(format!("{}.jpg",i).as_str(), FileOptions::default())?;
+        zip.start_file(format!("{}.png",i).as_str(), FileOptions::default())?;
         let mut img_buf = Vec::new();
         let mut img_cur = Cursor::new(&mut img_buf);
-        let mut encoder = image::jpeg::JpegEncoder::new(&mut img_cur);
-        encoder.encode_image(&im)?;
-        zip.write(&img_buf)?;
+        let encoder = image::png::PngEncoder::new(&mut img_cur);
+        let (width, height) = im.dimensions();
+        encoder.encode(im.as_raw(), width, height, image::ColorType::Rgba8)?;
+        //im.save(format!("{}.png",i)).unwrap();
+        zip.write_all(&img_buf)?;
     }
     zip.finish()?;
     drop(zip);

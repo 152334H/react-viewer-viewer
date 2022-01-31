@@ -100,21 +100,18 @@ const SaveAll = ({imgs}) => {
 
 // button 4: save image viewer state to a bunch of images in a zip (TODO)
 const CompileButton = ({imgs}) => {
-  if (!('rpc' in window)) return <></>; // TODO: find the correct way to check for Tauri
+  if (!('rpc' in window)) // TODO: find the correct way to check for Tauri
+    return <></>;
   return <IconButtonSimple icon={<Archive/>} onClick={() => {
     // this will be really slow!
     invoke('compile_images', {json:
         {imgStates: imgs, zoom: window.devicePixelRatio}
     }).then(res => {
-        console.log("success");
-        console.log(res);
-        console.log(
-        saveAs(new Blob([res], {type: "application/zip"}),
+        let byteArray = new Uint8Array(res);
+        saveAs(new Blob([byteArray], {type: "application/zip"}),
       `images-${Date.now()}.zip`)
-        )}
-    ).catch(e => {
+    }).catch(e => {
         window.alert('something went wrong in tauri command "compile_images"');
-        console.error(e)
     })
   }}/>
 }
