@@ -38,12 +38,12 @@ jobs:
         toolchain: stable
     - uses: actions/cache@v2
       with:
-        path: | # not sure how to make this work
-          ${{env.USERPROFILE}}/.cargo/bin/
-          ${{env.USERPROFILE}}/.cargo/registry/index/
-          ${{env.USERPROFILE}}/.cargo/registry/cache/
-          ${{env.USERPROFILE}}/.cargo/git/db/
-          src-tauri/target/
+        path: | # TODO: check if we're supposed to use backslashes or forward slashes here.
+          ${{env.USERPROFILE}}\.cargo\bin\
+          ${{env.USERPROFILE}}\.cargo\registry\index\
+          ${{env.USERPROFILE}}\.cargo\registry\cache\
+          ${{env.USERPROFILE}}\.cargo\git\db\
+          src-tauri\target\
         key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
     - uses: tauri-apps/tauri-action@v0
       env:
