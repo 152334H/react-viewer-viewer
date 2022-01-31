@@ -16,6 +16,7 @@ jobs:
         chcp 65001 #set code page to utf-8
         echo ("USERPROFILE=" + $env:USERPROFILE) >> $env:GITHUB_ENV
     - name: no way that ${{ env.USERPROFILE }} works now
+      run: | # oops
         echo "$env:USERPROFILE"
         echo "$env:GITHUB_ENV"
         exit 1
