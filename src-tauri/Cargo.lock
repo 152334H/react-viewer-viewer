@@ -40,14 +40,16 @@ checksum = "94a45b455c14666b85fc40a019e8ab9eb75e3a124e05494f5397122bc9eb06e0"
 
 [[package]]
 name = "app"
-version = "0.1.1"
+version = "0.2.0"
 dependencies = [
  "base64",
  "image",
+ "rayon",
  "serde",
  "serde_json",
  "tauri",
  "tauri-build",
+ "zip",
 ]
 
 [[package]]
