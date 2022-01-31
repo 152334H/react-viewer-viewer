@@ -22,7 +22,7 @@ jobs:
         if: steps.node-cache.outputs.cache-hit != 'true'
         run: npm install
       - name: add hostname to package json
-        run: sed 's/^}$/  ,"homepage": "https:\/\/152334h.github.io\/react-viewer-viewer\/"}/' -i package.json
+        run: ./edit_package_json.sh
       - name: Build viewer-viewer
         run: npm run build
       - name: Deploy to GH pages
