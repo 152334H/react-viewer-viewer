@@ -1,11 +1,25 @@
 use std::error::Error;
-use std::io::{Cursor,Write};
+use std::io::{Cursor,Write,Seek};
 use std::convert::{TryInto,TryFrom};
+use std::sync::{Arc,Mutex};
 use serde::{Deserialize, Serialize};
 use image::{ImageBuffer, Rgba, DynamicImage};
 use image::imageops::{FilterType, overlay};
 use rayon::prelude::*;
 use zip::write::{FileOptions, ZipWriter};
+use thiserror::Error;
+
+#[derive(Error, Debug)]
+pub enum ArchiveError {
+    #[error("Error with base64 library")]
+    Base64Error(#[from] base64::DecodeError),
+    #[error("Error with zip library")]
+    ZipError(#[from] zip::result::ZipError),
+    #[error("Error with image library")]
+    ImageError(#[from] image::ImageError),
+    #[error("Error with I/O")]
+    IoError(#[from] std::io::Error)
+}
 
 #[derive(Serialize, Deserialize)]
 struct JSONImgState {
@@ -31,25 +45,24 @@ struct ImgState {
     zoom: f64
 }
 
-impl TryFrom<JSONViewerState> for Vec<ImgState> {
-    type Error = Box<dyn Error>;
-    //TODO: make this parallel
-    fn try_from(viewerstate: JSONViewerState) -> Result<Self, Self::Error> {
-        let zoom = viewerstate.zoom; // closure dumbness
-        viewerstate.imgStates.into_iter().map(|imgstate| {
-            // read the original image
-            let blob = base64::decode(&imgstate.src[imgstate.src.find(',').unwrap()+1..])?;
-            let reader = image::io::Reader::new(
-                Cursor::new(&blob)
-                ).with_guessed_format()?;
-            Ok(ImgState {
-                img: reader.decode()?,
-                scale: imgstate.scale,
-                pos: (imgstate.left as i32, imgstate.top as i32),
-                rotate: imgstate.rotate,
-                zoom
-            })
-        }).collect()
+struct JSONImgStateZoomed(JSONImgState, f64);
+
+impl TryFrom<JSONImgStateZoomed> for ImgState {
+    type Error = ArchiveError;
+    fn try_from(json: JSONImgStateZoomed) -> Result<Self, Self::Error> {
+        // read the original image
+        let (is,zoom) = (json.0,json.1);
+        let blob = base64::decode(&is.src[is.src.find(',').unwrap()+1..])?;
+        let reader = image::io::Reader::new(
+            Cursor::new(&blob)
+            ).with_guessed_format()?;
+        Ok(ImgState {
+            img: reader.decode()?,
+            scale: is.scale,
+            pos: (is.left as i32, is.top as i32),
+            rotate: is.rotate,
+            zoom
+        })
     }
 }
 
@@ -141,31 +154,40 @@ impl Into<Img> for ImgState {
     }
 }
 
-fn imgs_to_zip(imgs: Vec<Img>) -> Result<Vec<u8>, Box<dyn Error>> {
-    println!("zipping up stuff");
-    let mut buf = Vec::new();
-    let mut zip = ZipWriter::new(Cursor::new(&mut buf));
-    // this cannot be parallelized because the zip writer is not thread-safe
-    for (i,im) in imgs.into_iter().enumerate() {
-        zip.start_file(format!("{}.png",i).as_str(), FileOptions::default())?;
-        let mut img_buf = Vec::new();
-        let mut img_cur = Cursor::new(&mut img_buf);
-        let encoder = image::png::PngEncoder::new(&mut img_cur);
-        let (width, height) = im.dimensions();
-        encoder.encode(im.as_raw(), width, height, image::ColorType::Rgba8)?;
-        //im.save(format!("{}.png",i)).unwrap();
-        zip.write_all(&img_buf)?;
-    }
-    zip.finish()?;
-    drop(zip);
-    Ok(buf)
+fn add_img_to_zip<W: Write+Seek>(i: usize, im: Img, zip_mutex: Arc<Mutex<&mut ZipWriter<W>>>) -> Result<(), ArchiveError> {
+    let mut img_buf = Vec::new();
+    let mut img_cur = Cursor::new(&mut img_buf);
+    let encoder = image::png::PngEncoder::new(&mut img_cur);
+    let (width, height) = im.dimensions();
+    encoder.encode(im.as_raw(), width, height, image::ColorType::Rgba8)?;
+    //im.save(format!("{}.png",i)).unwrap();
+    let mut zip = zip_mutex.lock().unwrap();
+    zip.start_file(format!("{}.png",i).as_str(), FileOptions::default())?;
+    zip.write_all(&img_buf)?;
+    println!("{}: finished adding image to zip", i);
+    Ok(())
 }
 
 pub fn viewer_to_zip(json: JSONViewerState) -> Result<Vec<u8>, Box<dyn Error>> {
-    println!("converting json");
-    let ls: Vec<ImgState> = json.try_into()?; // sequential
     println!("going parallel");
-    imgs_to_zip( // sequential
-        ls.into_par_iter().map(|is| is.into()).collect() // parallel
-    )
+    let zoom = json.zoom;
+    let mut buf = Vec::new();
+    let mut zip = ZipWriter::new(Cursor::new(&mut buf));
+    let zip_mutex = Arc::new(Mutex::new(&mut zip));
+    json.imgStates.into_par_iter().enumerate().map(move |(i,json_is)| -> Result<(usize,ImgState), ArchiveError> {
+        println!("{}: starting",i);
+        let json_is_wrapped = JSONImgStateZoomed(json_is, zoom);
+        Ok((i, json_is_wrapped.try_into()?))
+    }).map(|res| res.map(|(i,is)| {
+        println!("{}: finished conversion to ImgState", i);
+        (i,is.into())
+    })).try_for_each(|res| -> Result<(), ArchiveError> {
+        let (i,im) = res?;
+        println!("{}: finished conversion to Img", i);
+        add_img_to_zip(i, im, Arc::clone(&zip_mutex))
+    })?;
+    zip.finish()?;
+    drop(zip);
+    println!("prepared zip buffer");
+    Ok(buf)
 }
