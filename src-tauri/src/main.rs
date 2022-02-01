@@ -7,10 +7,8 @@ mod lib;
 use lib::{JSONViewerState, viewer_to_zip};
 
 #[tauri::command]
-fn compile_images(json: JSONViewerState) -> Result<Vec<u8>, String> {
-    let res = viewer_to_zip(json).map_err(|e| e.to_string())?;
-    println!("that worked!");
-    Ok(res)
+async fn compile_images(json: JSONViewerState) -> Result<Vec<u8>, String> {
+    viewer_to_zip(json).map_err(|e| e.to_string())
 }
 
 fn main() {
