@@ -14,6 +14,10 @@ import CssBaseline from '@mui/material/CssBaseline';
 import {PhotoCamera, Download, Upload, Collections, Archive} from '@mui/icons-material';
 import {createTheme, ThemeProvider} from '@mui/material/styles'
 
+import Box from '@mui/material/Box';
+import CircularProgress from '@mui/material/CircularProgress';
+import { green, red } from '@mui/material/colors';
+
 import {invoke} from '@tauri-apps/api/tauri'
 
 const IconLocal = ({type}) => { // cribbed from react-viewer/Icon.tsx
@@ -87,7 +91,6 @@ const compressedImgs = imgs => {
   return {dataURLs, imgStates}
 }
 
-
 // button 3: save image viewer state to pickle (image-$timestamp.json)
 const SaveAll = ({imgs}) => {
   const saveAll = () => {
@@ -98,13 +101,57 @@ const SaveAll = ({imgs}) => {
   return <IconButtonSimple icon={<Download/>} onClick={saveAll}/>
 }
 
+const LoadingButton = ({icon, onClick}) => {
+  const [loading, setLoading] = React.useState(false);
+  const [success, setSuccess] = React.useState(null);
+
+  const buttonSx = {
+    ...(success!==null && ( success ? {
+      bgcolor: green[500],
+      '&:hover': { bgcolor: green[700], },
+    } : {
+      bgcolor: red[500],
+      '&:hover': { bgcolor: red[700], },
+    })),
+  };
+
+  const handleButtonClick = () => {
+    if (!loading) {
+      setSuccess(null); setLoading(true);
+      onClick().then(() => setSuccess(true)
+      ).catch(() => setSuccess(false)
+      ).finally(() => setLoading(false));
+    }
+  };
+  return (<Box sx={{ display: 'flex', alignItems: 'center' }}>
+    <Box sx={{ m: 1, position: 'relative' }}>
+      <IconButton sx={buttonSx} variant="contained" disabled={loading} onClick={handleButtonClick}>
+        {icon}
+      </IconButton>
+      {loading && (
+        <CircularProgress
+          size={24}
+          sx={{
+            color: green[500],
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            marginTop: '-12px',
+            marginLeft: '-12px',
+          }}
+        />
+      )}
+    </Box>
+  </Box>);
+}
+
 // button 4: save image viewer state to a bunch of images in a zip (TODO)
 const CompileButton = ({imgs}) => {
   if (!('rpc' in window)) // TODO: find the correct way to check for Tauri
     return <></>;
-  return <IconButtonSimple icon={<Archive/>} onClick={() => {
+  return <LoadingButton icon={<Archive/>} onClick={() => {
     // this will be really slow!
-    invoke('compile_images', {json:
+    return invoke('compile_images', {json:
         {imgStates: imgs, zoom: window.devicePixelRatio}
     }).then(res => {
         let byteArray = new Uint8Array(res);
