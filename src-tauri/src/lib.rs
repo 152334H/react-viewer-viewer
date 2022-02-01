@@ -10,7 +10,7 @@ use zip::write::{FileOptions, ZipWriter};
 use thiserror::Error;
 
 #[derive(Error, Debug)]
-pub enum ArchiveError {
+enum ArchiveError {
     #[error("Error with base64 library")]
     Base64Error(#[from] base64::DecodeError),
     #[error("Error with zip library")]
@@ -69,7 +69,7 @@ impl TryFrom<JSONImgStateZoomed> for ImgState {
 const MAX_DIMENS: (u32,u32) = (1920,1080);
 const FILTER: FilterType = FilterType::CatmullRom;
 
-pub type Img = ImageBuffer::<Rgba<u8>, Vec<u8>>;
+type Img = ImageBuffer::<Rgba<u8>, Vec<u8>>;
 
 fn blank_image() -> Img {
     ImageBuffer::from_pixel(MAX_DIMENS.0, MAX_DIMENS.1, Rgba([0,0,0,255]))
