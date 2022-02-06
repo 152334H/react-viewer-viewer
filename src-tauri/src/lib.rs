@@ -71,7 +71,7 @@ impl TryFrom<JSONImgStateZoomed> for ImgState {
 const MAX_DIMENS: (i32,i32) = (1920,1080);
 const FILTER: FilterType = FilterType::CatmullRom;
 
-pub type Img = ImageBuffer::<Rgba<u8>, Vec<u8>>;
+type Img = ImageBuffer::<Rgba<u8>, Vec<u8>>;
 
 fn blank_image() -> Img {
     ImageBuffer::from_pixel(MAX_DIMENS.0 as u32, MAX_DIMENS.1 as u32, Rgba([0,0,0,255]))
