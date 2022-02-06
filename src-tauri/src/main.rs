@@ -3,6 +3,13 @@
   windows_subsystem = "windows"
 )]
 
+/* TODO:
+ * - Compilation flags for speed
+ * - Update image library
+ * - Switch to using the compressed json version, correspondingly passing around DynamicImage
+ * - references instead of direct image values
+ */
+
 mod lib;
 use lib::{JSONViewerState, viewer_to_zip};
 

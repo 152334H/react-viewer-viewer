@@ -1,7 +1,7 @@
 {
   "package": {
     "productName": "react-viewer-viewer",
-    "version": "0.2.6"
+    "version": "0.3.0"
   },
   "build": {
     "distDir": "../build",
@@ -55,10 +55,10 @@
     "windows": [
       {
         "title": "Homework",
-        "width": 800,
-        "height": 600,
+        "width": 1920,
+        "height": 1080,
         "resizable": true,
-        "fullscreen": false
+        "fullscreen": true
       }
     ],
     "security": {
