@@ -162,12 +162,17 @@ impl<'a> Into<Img> for ImgStateRef<'a> {
     }
 }
 
-fn add_img_to_zip<W: Write+Seek>(i: usize, im: Img, zip_mutex: Arc<Mutex<&mut ZipWriter<W>>>) -> AResult<()> {
+fn encode_img(im: Img) -> AResult<Vec<u8>> {
     let mut img_buf = Vec::new();
     let mut img_cur = Cursor::new(&mut img_buf);
     let encoder = image::codecs::png::PngEncoder::new(&mut img_cur);
     let (width, height) = im.dimensions();
     encoder.write_image(im.as_raw(), width, height, image::ColorType::Rgba8)?;
+    Ok(img_buf)
+}
+
+fn add_img_to_zip<W: Write+Seek>(i: usize, im: Img, zip_mutex: Arc<Mutex<&mut ZipWriter<W>>>) -> AResult<()> {
+    let img_buf = encode_img(im)?;
     //im.save(format!("{}.png",i)).unwrap();
     let mut zip = zip_mutex.lock().unwrap();
     zip.start_file(format!("{}.png",i).as_str(), FileOptions::default())?;
