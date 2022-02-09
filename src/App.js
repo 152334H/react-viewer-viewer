@@ -159,7 +159,8 @@ const CompileButton = ({imgs}) => {
         saveAs(new Blob([byteArray], {type: "application/zip"}),
       `images-${Date.now()}.zip`)
     }).catch(e => {
-        window.alert('something went wrong in tauri command "compile_images"');
+        window.alert(`something went wrong in tauri command "compile_images": ${e}`);
+        throw new Error('invoke error')
     })
   }}/>
 }
