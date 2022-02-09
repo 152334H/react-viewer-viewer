@@ -18,8 +18,8 @@ pub struct JSONCompViewerState {
 }
 
 #[tauri::command]
-async fn compile_compressed_images(state: JSONCompViewerState) -> Result<Vec<u8>, String> {
-    compressed_viewer_to_zip(state.json_images, state.zoom).map_err(|e| e.to_string())
+async fn compile_compressed_images(json: JSONCompViewerState) -> Result<Vec<u8>, String> {
+    compressed_viewer_to_zip(json.json_images, json.zoom).map_err(|e| e.to_string())
 }
 
 fn main() {
