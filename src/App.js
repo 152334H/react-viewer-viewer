@@ -151,8 +151,9 @@ const CompileButton = ({imgs}) => {
     return <></>;
   return <LoadingButton icon={<Archive/>} onClick={() => {
     // this will be really slow!
-    return invoke('compile_images', {json:
-        {imgStates: imgs, zoom: window.devicePixelRatio}
+    return invoke('compile_compressed_images', {json:
+        //{imgStates: imgs, zoom: window.devicePixelRatio}
+        {json_images: compressedImgs(imgs), zoom: window.devicePixelRatio}
     }).then(res => {
         let byteArray = new Uint8Array(res);
         saveAs(new Blob([byteArray], {type: "application/zip"}),
