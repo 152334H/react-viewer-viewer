@@ -49,14 +49,16 @@ const readerProducer = meth => (
   })
 )
 
+const URLToBlob = url => fetch(url).then(res => res.blob());
+const BlobToOURL = blob => URL.createObjectURL(blob);
+const blobToB64 = blob => readerProducer(r => r.readAsDataURL)(blob);
+
 // button 1: upload images from local filesystem
 const Uploader = ({addImgs}) => {
-  const blobToData = readerProducer(r => r.readAsDataURL)
-
   const onChange = e => // run addImg on all images uploaded
     Promise.all(Array.from(e.target.files)
       .filter(f => f.type.match('image.*'))
-      .map(blobToData))
+      .map(BlobToOURL))
       .then(addImgs)
 
   return <UploadButton id="icon-button-file"
@@ -68,17 +70,19 @@ const UploadAll = ({setImgs}) => {
   const blobToText = readerProducer(r => r.readAsText)
 
   const onChange = e => blobToText(e.target.files[0]).then(obj => {
-    obj = JSON.parse(obj)
-    setImgs(obj.imgStates.map(im => (
-      {...im, src: obj.dataURLs[im.src]}
-    )))
+    obj = JSON.parse(obj);
+    Promise.all(obj.dataURLs.map(b64 => URLToBlob(b64).then(BlobToOURL))).then(urls => {
+      setImgs(obj.imgStates.map(im => (
+        {...im, src: urls[im.src]}
+      )))
+    })
   })
 
   return <UploadButton id="icon-button-file-all"
     icon={<Upload/>} onChange={onChange}/>
 }
 
-const compressedImgs = imgs => {
+const compressImgs = imgs => {
   let dataURLs = [];
   let imgStates = imgs.map(i => {
     let ind = dataURLs.findIndex(d => d === i.src)
@@ -88,15 +92,18 @@ const compressedImgs = imgs => {
     }
     return {...i, src: ind}
   });
-  return {dataURLs, imgStates}
+    return Promise.all(dataURLs.map(objURL => URLToBlob(objURL).then(blobToB64)))
+        .then(dataURLs => ({dataURLs, imgStates}))
 }
 
 // button 3: save image viewer state to pickle (image-$timestamp.json)
 const SaveAll = ({imgs}) => {
   const saveAll = () => {
-    saveAs(new Blob([JSON.stringify(compressedImgs(imgs))],
-      {type: "text/json;charset=utf-8"}),
-      `images-${Date.now()}.json`)
+    compressImgs(imgs).then(compImgs => 
+      saveAs(new Blob([JSON.stringify(compImgs)],
+        {type: "text/json;charset=utf-8"}),
+        `images-${Date.now()}.json`)
+    )
   }
   return <IconButtonSimple icon={<Download/>} onClick={saveAll}/>
 }
@@ -151,17 +158,42 @@ const CompileButton = ({imgs}) => {
     return <></>;
   return <LoadingButton icon={<Archive/>} onClick={() => {
     // this will be really slow!
-    return invoke('compile_compressed_images', {json:
+    return compressImgs(imgs).then(compImgs =>
+      invoke('compile_compressed_images', {json:
         //{imgStates: imgs, zoom: window.devicePixelRatio}
-        {json_images: compressedImgs(imgs), zoom: window.devicePixelRatio}
-    }).then(res => {
+        {json_images: compImgs, zoom: window.devicePixelRatio}
+      }).then(res => {
         let byteArray = new Uint8Array(res);
         saveAs(new Blob([byteArray], {type: "application/zip"}),
       `images-${Date.now()}.zip`)
-    }).catch(e => {
-        window.alert(`something went wrong in tauri command "compile_images": ${e}`);
+      }).catch(e => {
+        window.alert(`something went wrong in tauri command "compile_compressed_images": ${e}`);
         throw new Error('invoke error')
-    })
+      })
+    )
+  }}/>
+}
+
+// button 5: TESTING
+const ZipButton = ({imgs}) => {
+  if (!('rpc' in window)) // TODO: find the correct way to check for Tauri
+    return <></>;
+  return <LoadingButton icon={<Archive/>} onClick={() => {
+    // this will be really slow!
+    return invoke('zip_imagestate', {json:
+        //{imgStates: imgs, zoom: window.devicePixelRatio}
+        {json_images: imgs, zoom: window.devicePixelRatio}
+      }).then(res => {
+        window.alert(res);
+          /*
+        let byteArray = new Uint8Array(res);
+        saveAs(new Blob([byteArray], {type: "application/zip"}),
+      `images-${Date.now()}.zip`)
+      */
+      }).catch(e => {
+        window.alert(`something went wrong in tauri command "zip_imagestate": ${e}`);
+        throw new Error('invoke error')
+      })
   }}/>
 }
 
@@ -240,6 +272,7 @@ function RealApp() {
           onClick={() => setShow(true)}/>
         <SaveAll imgs={imgs}/>
         <CompileButton imgs={imgs}/>
+        <ZipButton imgs={imgs}/>
       </>))()}
       {show && <ViewerButMoreSimple
         imgs={imgs}
