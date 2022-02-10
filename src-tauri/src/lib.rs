@@ -85,6 +85,13 @@ pub struct JSONImages {
     imgStates: Vec<JSONCompressedImgState>
 }
 
+#[allow(non_snake_case)] // the json is from js. snake case isn't used over there.
+#[derive(Serialize, Deserialize)]
+pub struct JSONImagesU8 {
+    pub dataURLs: Vec<Vec<u8>>,
+    imgStates: Vec<JSONCompressedImgState>
+}
+
 struct ImgStateRef<'a> {
     img: &'a DynamicImage,
     scale: f64,
