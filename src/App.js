@@ -65,13 +65,15 @@ const Uploader = ({addImgs}) => {
     icon={<PhotoCamera />} onChange={onChange}/>
 }
 
+const logAndRet = v => {console.log(v); return v}
+
 // button 2: load image viewer from pickled state
 const UploadAll = ({setImgs}) => {
   const blobToText = readerProducer(r => r.readAsText)
 
   const onChange = e => blobToText(e.target.files[0]).then(obj => {
     obj = JSON.parse(obj);
-    Promise.all(obj.dataURLs.map(b64 => URLToBlob(b64).then(BlobToOURL))).then(urls => {
+      Promise.all(obj.dataURLs.map(b64 => URLToBlob(logAndRet(b64)).then(b=>BlobToOURL(logAndRet(b))))).then(urls => {
       setImgs(obj.imgStates.map(im => (
         {...im, src: urls[im.src]}
       )))
