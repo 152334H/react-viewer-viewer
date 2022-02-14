@@ -6,7 +6,10 @@
 /* TODO:
  * - use a 2d point struct instead of cluttering the namespace
  * - remove base64 usage
+ * - make a git push hook so I don't forget to bump the version number every time?
  * - increase speed more somehow
+ * - Figure out how to return a UInt8Array/ArrayBuffer/Blob instead of number[]
+ * - separate function to return uncompressed images instead of zip
  */
 
 mod lib;
@@ -41,6 +44,7 @@ async fn zip_imagestate(json: JSONCompViewerStateU8) -> Result<Vec<usize>, Strin
 fn main() {
   tauri::Builder::default()
     .invoke_handler(tauri::generate_handler![compile_compressed_images])
+    .invoke_handler(tauri::generate_handler![zip_imagestate])
     .run(tauri::generate_context!())
     .expect("error while running tauri application");
 }
