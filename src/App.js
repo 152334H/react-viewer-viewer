@@ -8,7 +8,6 @@
    * fix res => res.blob()
    * Way (buttons? dragging? keyboard?) to reorganise images
    * Drag and drop for file upload?
-   * Edge cases, like when all images are deleted
    * instead of scattered zips and jsons, how about we create an actual directory (and appropriate listing) for all of the viewerstates? This also implies making a new app menu
    * Finally implement the no-toolbar mode we originally planned. Will be possible (not incredibly slow) since image flattening from tauri is possible.
 */

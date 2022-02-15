@@ -115,6 +115,10 @@ const ViewerSession = ({goBack}) => {
   }
   const addedButtons = makeButtons(setImgs, setActiveIndex)
 
+  if (imgs.length === 0 && show) {
+    setShow(false); // this is when all images get deleted
+  }
+
   // TODO: save state upon goBack()
   return (<div className="App">
     <header className="App-header">
