@@ -20,8 +20,17 @@ const IconLocal = ({type}) => { // cribbed from react-viewer/Icon.tsx
   return <i className={`${prefixCls} ${prefixCls}-${type}`}></i>
 }
 
+const swappedImgs = (i, j, imgs) => {
+  // ASSUMES:i !== j, i and j within imgs[]
+  //if (j >= imgs.length || i >= imgs.length || j < 0 || i < 0) { return imgs; }
+  let res = imgs.slice();
+  [res[i], res[j]] = [res[j], res[i]];
+  [res[j].alt,res[i].alt] = [j,i];
+  return res;
+}
+
 // TODO:why can't vim code fold this??
-const makeButtons = (setImgs, setActiveIndex) => [
+const makeButtons = (setImgs, setActiveIndex) => ([
   {
     key: "dupe",
     actionType: 100,
@@ -36,7 +45,8 @@ const makeButtons = (setImgs, setActiveIndex) => [
       })
       setActiveIndex(activeImage.alt+1)
     }
-  }, {
+  },
+  {
     key: "trash",
     actionType: 101,
     render: <IconLocal type="b"/>,
@@ -50,8 +60,34 @@ const makeButtons = (setImgs, setActiveIndex) => [
         )
       ), 0) // timeout forces sAI to run first. Needed to prevent oob index when .alt == imgs.length-1.
     }
+  },
+  {
+    key: "shift_picture_left",
+    actionType: 200,
+    render: <IconLocal type="c"/>,
+    onClick: activeImage => {
+      const ind = activeImage.alt;
+      setImgs(imgs => {
+        if (!ind) { return imgs; }
+        setActiveIndex(ind-1); // TODO: race?
+        return swappedImgs(ind, ind-1, imgs)
+      });
+    }
+  },
+  {
+    key: "shift_picture_right",
+    actionType: 201,
+    render: <IconLocal type="d"/>,
+    onClick: activeImage => {
+      const ind = activeImage.alt;
+      setImgs(imgs => {
+        if (ind+1 >= imgs.length) {return imgs}
+        setActiveIndex(ind+1);
+        return swappedImgs(ind, ind+1, imgs);
+      });
+    }
   }
-]
+]);
 
 // the main component from react-viewer. default options written here
 // TODO: button to hide the toolbar and etc
