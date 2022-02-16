@@ -8,7 +8,8 @@
  * - remove base64 usage
  * - make a git push hook so I don't forget to bump the version number every time?
  * - increase speed more somehow
- * - Figure out how to return a UInt8Array/ArrayBuffer/Blob instead of number[]
+ * - Figure out how to return a UInt8Array/ArrayBuffer/Blob instead of number[].
+ *   see https://github.com/tauri-apps/tauri/pull/3305; we will probably need to update tauri!
  * - separate function to return uncompressed images instead of zip
  */
 
@@ -32,6 +33,7 @@ pub struct JSONCompViewerStateU8 {
     pub json_images: JSONImagesU8,
     pub zoom: f64
 }
+// TODO: test this command so that we can move on with the "send a compressed state" plan
 #[tauri::command]
 async fn zip_imagestate(json: JSONCompViewerStateU8) -> Result<Vec<usize>, String> {
     let mut res = vec![json.json_images.dataURLs.len()];
