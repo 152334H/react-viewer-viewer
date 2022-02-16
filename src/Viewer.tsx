@@ -21,7 +21,7 @@ interface ToolbarConfig { // private from react-viewer/ViewerProps
     render?: React.ReactNode;
     onClick?: (activeIm: FullImageState) => void;
 }
-//const logAndRet = v => {console.log(v); return v}
+//const logAndRet = (v:any) => {console.log(v); return v}
 
 // additional toolbar buttons.
 // TODO: I haven't figured out how to make these display icons yet
@@ -122,8 +122,8 @@ const ViewerButMoreSimple: FC<SimpleViewerProps> = ({setShow, setActiveIndex, ac
 }
 
 // TODO: button to hide the toolbar and etc
-const ViewerSession = ({goBack}: {goBack: ()=>void}) => {
-  const [imgs,setImgs] = React.useState([])
+const ViewerSession = ({sess,goBack}: {sess: Images, goBack: (sess:Images)=>void}) => {
+  const [imgs,setImgs] = React.useState(sess)
   const [show,setShow] = React.useState(false)
   const [focused,setFocused] = React.useState(false);
   const [activeIndex, setActiveIndex] = React.useState(0)
@@ -143,7 +143,7 @@ const ViewerSession = ({goBack}: {goBack: ()=>void}) => {
     <header className="App-header">
       <div style={{float: 'right'}}>
         <IconButtonSimple icon={<KeyboardReturn/>}
-          onClick={goBack}/>
+          onClick={()=>goBack(imgs)}/>
       </div>
       <h1>test</h1>
       <h5>zoom level: {window.devicePixelRatio}</h5>
