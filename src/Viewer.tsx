@@ -1,7 +1,8 @@
 /* This is the page for a single image viewer sewssion.
 */
 
-import React from 'react'
+import * as React from 'react'
+import {FC} from 'react'
 // MUI imports
 import {KeyboardReturn} from '@mui/icons-material';
 // other imports
@@ -11,16 +12,25 @@ import Viewer from 'react-viewer'
 import {IconButtonSimple} from './UI'
 import {ViewerButtons} from './ViewerButtons'
 
+// TODO:move these types somewhere more sensible
+import {Images,FullImageState} from './ViewerButtons'
+
+interface ToolbarConfig { // private from react-viewer/ViewerProps
+    key: string;
+    actionType?: number;
+    render?: React.ReactNode;
+    onClick?: (activeIm: FullImageState) => void;
+}
 //const logAndRet = v => {console.log(v); return v}
 
 // additional toolbar buttons.
 // TODO: I haven't figured out how to make these display icons yet
-const IconLocal = ({type}) => { // cribbed from react-viewer/Icon.tsx
+const IconLocal = ({type}: {type:string}) => { // cribbed from react-viewer/Icon.tsx
   const prefixCls = 'react-viewer-icon'
   return <i className={`${prefixCls} ${prefixCls}-${type}`}></i>
 }
 
-const swappedImgs = (i, j, imgs) => {
+const swappedImgs = (i: number, j: number, imgs: Images) => {
   // ASSUMES:i !== j, i and j within imgs[]
   //if (j >= imgs.length || i >= imgs.length || j < 0 || i < 0) { return imgs; }
   let res = imgs.slice();
@@ -29,13 +39,12 @@ const swappedImgs = (i, j, imgs) => {
   return res;
 }
 
+type ButtonLambda = (setImgs: (cb: (imgs:Images) => Images) => void, setActiveIndex: (i: number) => void) => ToolbarConfig[];
 // TODO:why can't vim code fold this??
-const makeButtons = (setImgs, setActiveIndex) => ([
+const makeButtons: ButtonLambda = (setImgs, setActiveIndex) => ([
   {
     key: "dupe",
-    actionType: 100,
-    render: <IconLocal type="a" style={{
-      content: '\uea0a'}}/>,
+    render: <IconLocal type="a"/>,
     onClick: activeImage => {
       setImgs(imgs => {
         let newImgs = imgs.slice(0, activeImage.alt);
@@ -48,7 +57,6 @@ const makeButtons = (setImgs, setActiveIndex) => ([
   },
   {
     key: "trash",
-    actionType: 101,
     render: <IconLocal type="b"/>,
     onClick: activeImage => {
       setActiveIndex(activeImage.alt ? activeImage.alt-1 : 0)
@@ -63,7 +71,6 @@ const makeButtons = (setImgs, setActiveIndex) => ([
   },
   {
     key: "shift_picture_left",
-    actionType: 200,
     render: <IconLocal type="c"/>,
     onClick: activeImage => {
       const ind = activeImage.alt;
@@ -76,7 +83,6 @@ const makeButtons = (setImgs, setActiveIndex) => ([
   },
   {
     key: "shift_picture_right",
-    actionType: 201,
     render: <IconLocal type="d"/>,
     onClick: activeImage => {
       const ind = activeImage.alt;
@@ -89,9 +95,17 @@ const makeButtons = (setImgs, setActiveIndex) => ([
   }
 ]);
 
+//TODO: fix this by not using .alt as a silly knowledge backstore
+type SimpleViewerProps = {
+    setShow: (b: boolean) => void;
+    setActiveIndex: (i:number) => void;
+    activeIndex: number;
+    imgs: any[]; // note: this is really Images, but due to our use of the .alt attribute as a shim...
+    addedButtons: any[] // note: this is really ToolbarConfig[], but...
+};
 // the main component from react-viewer. default options written here
 // TODO: button to hide the toolbar and etc
-const ViewerButMoreSimple = ({setShow, setActiveIndex, activeIndex, imgs, addedButtons}) => (
+const ViewerButMoreSimple: FC<SimpleViewerProps> = ({setShow, setActiveIndex, activeIndex, imgs, addedButtons}) => (
   <Viewer visible={true} zoomSpeed={0.1}
     drag={true} 
     noResetZoomAfterChange={true}
@@ -104,12 +118,12 @@ const ViewerButMoreSimple = ({setShow, setActiveIndex, activeIndex, imgs, addedB
     activeIndex={activeIndex}
   />)
 
-const ViewerSession = ({goBack}) => {
+const ViewerSession = ({goBack}: {goBack: ()=>void}) => {
   const [imgs,setImgs] = React.useState([])
   const [show,setShow] = React.useState(false)
   const [activeIndex, setActiveIndex] = React.useState(0)
 
-  const updateImgs = cb => {
+  const updateImgs = (cb: (imgs:Images)=>Images) => {
     setImgs(imgs => cb(imgs));
     setShow(true);
   }
@@ -128,7 +142,7 @@ const ViewerSession = ({goBack}) => {
       </div>
       <h1>test</h1>
       <h5>zoom level: {window.devicePixelRatio}</h5>
-      <ViewerButtons state={[setShow,imgs,updateImgs]}/>
+      <ViewerButtons setShow={setShow} imgs={imgs} updateImgs={updateImgs}/>
       {show && <ViewerButMoreSimple
         imgs={imgs}
         setShow={setShow}

@@ -1,4 +1,5 @@
-import React from 'react'
+import * as React from 'react'
+import {FC,ReactElement} from 'react'
 // MUI imports
 import IconButton from '@mui/material/Button';
 import {PhotoCamera, Download, Upload, Collections, Archive} from '@mui/icons-material';
@@ -11,23 +12,45 @@ import {saveAs} from 'file-saver'
 
 import {IconButtonSimple,UploadButton,isTauri} from './UI'
 
-const readerProducer = meth => (
-  blob => new Promise((resolve) => {
+interface ImageMeta {
+    alt: number
+    scale: number
+    left: number
+    top: number
+    rotate: number
+}
+interface DerefImageState extends ImageMeta {
+    src: number // index for dataURLs[]
+};
+interface FullImageState extends ImageMeta{
+    src: string // ! this is a blob objectURL!
+};
+
+type Images = FullImageState[];
+type ReducedImages = {
+    dataURLs: string[]; // this is an ObjectURL!
+    imgStates: DerefImageState[];
+}; 
+
+export {Images, FullImageState};
+
+const readerProducer = (meth: (r:FileReader)=>any) => (
+ (blob:any) => new Promise((resolve) => {
     const reader = new FileReader()
     reader.onloadend = () => resolve(reader.result)
     meth(reader).bind(reader)(blob)
   })
 )
 
-const URLToBlob = url => fetch(url).then(res => res.blob());
-const BlobToOURL = blob => URL.createObjectURL(blob);
-const blobToB64 = blob => readerProducer(r => r.readAsDataURL)(blob);
+const URLToBlob = (url:string) => fetch(url).then(res => res.blob());
+const BlobToOURL = (blob:Blob) => URL.createObjectURL(blob);
+const blobToB64 = (blob:Blob) => readerProducer(r => r.readAsDataURL)(blob);
 
 // button 1: upload images from local filesystem
-const Uploader = ({addImgs}) => {
-  const onChange = e => // run addImg on all images uploaded
+const Uploader = ({addImgs}: {addImgs: (urls:string[])=>void}) => {
+  const onChange = (e:any) => // run addImg on all images uploaded
     Promise.all(Array.from(e.target.files)
-      .filter(f => f.type.match('image.*'))
+      .filter((f:File) => f.type.match('image.*'))
       .map(BlobToOURL))
       .then(addImgs)
 
@@ -36,11 +59,11 @@ const Uploader = ({addImgs}) => {
 }
 
 // button 2: load image viewer from pickled state
-const UploadAll = ({setImgs}) => {
+const UploadAll = ({setImgs}: {setImgs:(imgs:Images)=>void}) => {
   const blobToText = readerProducer(r => r.readAsText)
 
-  const onChange = e => blobToText(e.target.files[0]).then(obj => {
-    obj = JSON.parse(obj);
+  const onChange = (e:any) => blobToText(e.target.files[0]).then((json: string) => {
+    let obj: ReducedImages = JSON.parse(json);
       Promise.all(obj.dataURLs.map(b64 => URLToBlob(b64).then(BlobToOURL))).then(urls => {
       setImgs(obj.imgStates.map(im => (
         {...im, src: urls[im.src]}
@@ -53,8 +76,8 @@ const UploadAll = ({setImgs}) => {
 }
 
 // TODO:check the speed of this (is it fast enough?)
-const compressImgs = imgs => {
-  let dataURLs = [];
+const compressImgs = (imgs:Images) => {
+  let dataURLs: string[] = [];
   let imgStates = imgs.map(i => {
     let ind = dataURLs.findIndex(d => d === i.src)
     if (ind === -1) {
@@ -68,7 +91,7 @@ const compressImgs = imgs => {
 }
 
 // button 3: save image viewer state to pickle (image-$timestamp.json)
-const SaveAll = ({imgs}) => {
+const SaveAll = ({imgs}: {imgs:Images}) => {
   const saveAll = () => {
     compressImgs(imgs).then(compImgs => 
       saveAs(new Blob([JSON.stringify(compImgs)],
@@ -79,7 +102,9 @@ const SaveAll = ({imgs}) => {
   return <IconButtonSimple icon={<Download/>} onClick={saveAll}/>
 }
 
-const LoadingButton = ({icon, onClick}) => {
+const LoadingButton = ({icon, onClick}:
+  {icon: ReactElement, onClick: () => Promise<void>}
+  ) => {
   const [loading, setLoading] = React.useState(false);
   const [success, setSuccess] = React.useState(null);
 
@@ -125,7 +150,7 @@ const LoadingButton = ({icon, onClick}) => {
 }
 
 // button 4: save image viewer state to a bunch of images in a zip
-const CompileButton = ({imgs}) => {
+const CompileButton = ({imgs}: {imgs:Images}) => {
   if (!isTauri()) // TODO: find the correct way to check for Tauri
     return <></>;
   return <LoadingButton icon={<Archive/>} onClick={() => {
@@ -134,7 +159,7 @@ const CompileButton = ({imgs}) => {
       invoke('compile_compressed_images', {json:
         //{imgStates: imgs, zoom: window.devicePixelRatio}
         {json_images: compImgs, zoom: window.devicePixelRatio}
-      }).then(res => {
+      }).then((res: number[]) => {
         let byteArray = new Uint8Array(res);
         saveAs(new Blob([byteArray], {type: "application/zip"}),
       `images-${Date.now()}.zip`)
@@ -147,7 +172,7 @@ const CompileButton = ({imgs}) => {
 }
 
 // button 5: TESTING
-const ZipButton = ({imgs}) => {
+const ZipButton = ({imgs}: {imgs:Images}) => {
   if (!('rpc' in window)) // TODO: find the correct way to check for Tauri
     return <></>;
   return <LoadingButton icon={<Archive/>} onClick={() => {
@@ -169,14 +194,22 @@ const ZipButton = ({imgs}) => {
   }}/>
 }
 
-export const ViewerButtons = ({state}) => {
-  let [setShow,imgs,updateImgs] = state;
+interface VBProps {
+  setShow: (b:boolean) => void;
+  imgs: Images;
+  updateImgs: (callback: (imgs:Images)=>Images) => void;
+}
+
+export const ViewerButtons: FC<VBProps> = (
+  {setShow,imgs,updateImgs}
+  ) => {
   // TODO: in UploadAll, why do I need that updateImgs wrapper?
   return (<>
-    <Uploader addImgs={ls => updateImgs(_ => imgs
-      .concat(ls.map((i,ind) => (
-        {src: i, alt: imgs.length+ind, scale: 1}
-      )))
+    <Uploader addImgs={(ls:string[]) => updateImgs(_ => imgs
+      .concat(ls.map((url,ind) => ({
+          src: url, alt: imgs.length+ind,
+          scale: 1, left: 0, top: 0, rotate: 0
+      })))
     )}/>
     <UploadAll setImgs={imgs => updateImgs(()=>imgs)}/>
     {imgs.length>0 && (()=>(<>
