@@ -100,13 +100,15 @@ type SimpleViewerProps = {
     setShow: (b: boolean) => void;
     setActiveIndex: (i:number) => void;
     activeIndex: number;
+    focused: boolean;
     imgs: any[]; // note: this is really Images, but due to our use of the .alt attribute as a shim...
     addedButtons: any[] // note: this is really ToolbarConfig[], but...
 };
 // the main component from react-viewer. default options written here
-// TODO: button to hide the toolbar and etc
-const ViewerButMoreSimple: FC<SimpleViewerProps> = ({setShow, setActiveIndex, activeIndex, imgs, addedButtons}) => (
-  <Viewer visible={true} zoomSpeed={0.1}
+const ViewerButMoreSimple: FC<SimpleViewerProps> = ({setShow, setActiveIndex, activeIndex, focused, imgs, addedButtons}) => {
+  return (<Viewer visible={true}
+    noFooter={focused} noClose={focused}
+    zoomSpeed={0.1}
     drag={true} 
     noResetZoomAfterChange={true}
     noLimitInitializationSize={true}
@@ -117,10 +119,13 @@ const ViewerButMoreSimple: FC<SimpleViewerProps> = ({setShow, setActiveIndex, ac
     onIndexChange={setActiveIndex}
     activeIndex={activeIndex}
   />)
+}
 
+// TODO: button to hide the toolbar and etc
 const ViewerSession = ({goBack}: {goBack: ()=>void}) => {
   const [imgs,setImgs] = React.useState([])
   const [show,setShow] = React.useState(false)
+  const [focused,setFocused] = React.useState(false);
   const [activeIndex, setActiveIndex] = React.useState(0)
 
   const updateImgs = (cb: (imgs:Images)=>Images) => {
@@ -146,6 +151,7 @@ const ViewerSession = ({goBack}: {goBack: ()=>void}) => {
       {show && <ViewerButMoreSimple
         imgs={imgs}
         setShow={setShow}
+        focused={focused}
         addedButtons={addedButtons}
         activeIndex={activeIndex}
         setActiveIndex={setActiveIndex}
