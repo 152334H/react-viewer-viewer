@@ -104,6 +104,7 @@ type SimpleViewerProps = {
     addedButtons: any[] // note: this is really ToolbarConfig[], but...
 };
 // the main component from react-viewer. default options written here
+// TODO: fix bug where clicking on image previews in the footer will not save the state of the image the viewer is leaving. Also, check if the rotation bug still exists.
 const ViewerButMoreSimple: FC<SimpleViewerProps> = ({setShow, setActiveIndex, activeIndex, focused, imgs, addedButtons}) => {
   return (<Viewer visible={true}
     noFooter={focused} noClose={focused}
@@ -118,6 +119,55 @@ const ViewerButMoreSimple: FC<SimpleViewerProps> = ({setShow, setActiveIndex, ac
     onIndexChange={setActiveIndex}
     activeIndex={activeIndex}
   />)
+}
+
+type SessionState = {
+  show: boolean;
+  imgs: Images;
+  activeIndex: number;
+};
+type SessionStateCmd = {
+  type: string;
+  val: any;
+}
+
+
+function insertImage(imgs: Images, im: FullImageState, i: number) {
+  im.alt = i;
+  const right = imgs.slice(i+1).map(
+    im => ({...im, alt: im.alt+1})
+  );
+  return imgs.slice(0,i).concat(im,right);
+}
+function popImage(i: number, imgs: Images) {
+  const right = imgs.slice(i+1).map(
+    im => ({...im, alt: im.alt-1})
+  );
+  return imgs.slice(0,i).concat(right);
+}
+function sessReducer(s: SessionState, a: SessionStateCmd): SessionState {
+  switch (a.type) {
+    case 'setIndex':
+      if (a.val >= s.imgs.length || a.val < 0){
+        window.alert("setIndex out of bounds");
+      }
+      return {...s, activeIndex: a.val};
+    case 'dupeActiveImage':
+      window.alert("unimplemented");
+      return s;
+    case 'deleteActiveImage':
+      // s.imgs.length guaranteed to be > 0
+      const activeIndex = s.activeIndex ? s.activeIndex-1 : 0;
+      const show = s.show && (
+        s.imgs.length===1 ? true : false
+      ); // hide viewer if there'll be nothing
+      //
+      return {...s, activeIndex, show,
+        imgs: popImage(s.activeIndex, s.imgs)
+      };
+    default:
+      return s;
+  }
 }
 
 // TODO: button to hide the toolbar and etc
