@@ -40,7 +40,6 @@ const swappedImgs = (i: number, j: number, imgs: Images) => {
 }
 
 type ButtonLambda = (setImgs: (cb: (imgs:Images) => Images) => void, setActiveIndex: (i: number) => void) => ToolbarConfig[];
-// TODO:why can't vim code fold this??
 const makeButtons: ButtonLambda = (setImgs, setActiveIndex) => ([
   {
     key: "dupe",

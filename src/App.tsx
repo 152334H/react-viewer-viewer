@@ -11,7 +11,7 @@
    * instead of scattered zips and jsons, create an actual storage (and appropriate listing) for all of the viewerstates
    * Finally implement the no-toolbar mode we originally planned. Will be possible (not incredibly slow) since image flattening from tauri is possible.
    * fix typing
-   * merge together relevant state variables into objects.
+   * merge together relevant state variables into objects. https://reactjs.org/docs/hooks-reference.html use something that isn't useState
 */
 
 import * as React from 'react';

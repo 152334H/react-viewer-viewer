@@ -151,7 +151,7 @@ const LoadingButton = ({icon, onClick}:
 
 // button 4: save image viewer state to a bunch of images in a zip
 const CompileButton = ({imgs}: {imgs:Images}) => {
-  if (!isTauri()) // TODO: find the correct way to check for Tauri
+  if (!isTauri())
     return <></>;
   return <LoadingButton icon={<Archive/>} onClick={() => {
     // this will be really slow!
@@ -173,7 +173,7 @@ const CompileButton = ({imgs}: {imgs:Images}) => {
 
 // button 5: TESTING
 const ZipButton = ({imgs}: {imgs:Images}) => {
-  if (!('rpc' in window)) // TODO: find the correct way to check for Tauri
+  if (!isTauri())
     return <></>;
   return <LoadingButton icon={<Archive/>} onClick={() => {
     // this will be really slow!
