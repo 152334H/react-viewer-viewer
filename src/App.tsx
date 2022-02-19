@@ -25,9 +25,12 @@ import ListItemButton from '@mui/material/ListItemButton';
 import Add from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 
+import LF from 'localforage';
+import {ToastContainer} from 'react-toastify';
+
 import ViewerSession from './Viewer'
-import {Images} from './ViewerButtons'
-import {IconButtonSimple,isTauri} from './UI'
+import {Images,compressImgs,uncompressImgs,ReducedImages} from './ViewerButtons'
+import {IconButtonSimple,notifyPromise} from './UI'
 
 const MainMenu = ({sessions,select}: {
   sessions: Images[],
@@ -51,22 +54,27 @@ const MainMenu = ({sessions,select}: {
   </List></div>}
 </>)
 
-function loadSession() {
-  if (isTauri()) { window.alert("TODO") }
-  else {
-    const ls = localStorage.getItem('sessions')
-    window.alert("TODO: figure out how to JSON a blob");
-    return ls ? JSON.parse(ls) : [];
-  }
+async function loadSessionsSilent() {
+  let compSessions: ReducedImages[] = await LF.getItem('sessions');
+  if (compSessions === null) return [];
+  let sessions = await Promise.all(compSessions.map(async (sess) => {
+    return await uncompressImgs(sess, false);
+  }));
+  return sessions;
 }
 
-function saveSession(sessions: Images[]) {
-  if (isTauri()) { window.alert("TODO") }
-  else {
-    window.alert("TODO: figure out how to JSON a blob");
-    const stored = JSON.stringify(sessions);
-    localStorage.setItem('sessions',stored)
-  }
+function loadSessions() {
+  const p = loadSessionsSilent();
+  notifyPromise(p, 'loading saved sessions...');
+  return p
+}
+
+function saveSessions(sessions: Images[]) {
+  const p = Promise.all(
+    sessions.map(s => compressImgs(s,false))
+  ).then(sessions => LF.setItem('sessions', sessions));
+  notifyPromise(p, 'saving sessions...');
+  return p
 }
 
 //TODO:figure out the right type for sessions (maybe not pure Images[]?)
@@ -77,14 +85,12 @@ const App = () => {
   const [vind,setVind] = React.useState(null);
   const [sessions,setSessions] = React.useState([]);
 
-  React.useEffect(() => setSessions(loadSession()), []);
+  React.useEffect(() => {loadSessions().then(setSessions);}, []);
 
-  const setSaveSessions = (cb: (sessions: Images[]) => Images[]) =>
-    setSessions(sessions => {
-      const res = cb(sessions);
-      saveSession(res);
-      return res;
-  });
+  const setSaveSessions = (sessions: Images[]) => {
+    setSessions(sessions);
+    saveSessions(sessions); // this will async
+  }
 
   return (<React.Fragment>
     <ThemeProvider theme={createTheme({
@@ -99,8 +105,8 @@ const App = () => {
           setSessions(sessions.concat([[]]));
         }
         if (rm) {
-          setSaveSessions(sessions => sessions
-              .slice(0,i).concat(sessions.slice(i+1))
+          setSaveSessions(sessions.slice(0,i)
+                  .concat(sessions.slice(i+1))
           );
         } else {
           setVind(i);
@@ -108,14 +114,21 @@ const App = () => {
         }
       }} sessions={sessions}/> :
       <ViewerSession sess={sessions[vind]}
-      goBack={sess => setSaveSessions(sessions => {
-          // sessions should be a clone here?
-          sessions[vind] = sess; // or bugged
-          setMenu('main');
-          return sessions;
-      })}/>
+      goBack={sess => {
+        const newSessions = sessions.slice();
+        newSessions[vind] = sess;
+        setSaveSessions(newSessions);
+        setMenu('main');
+      }}/>
     }
     </ThemeProvider>
+    <ToastContainer position="top-right"
+      autoClose={1000}
+      hideProgressBar
+      closeOnClick={false}
+      draggable={false}
+      pauseOnFocusLoss={false}
+    />
   </React.Fragment>)
 }
 

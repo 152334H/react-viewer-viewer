@@ -2,6 +2,8 @@ import React, {ReactElement} from 'react'
 import IconButton from '@mui/material/Button';
 import Input from '@mui/material/Input';
 
+import {toast} from 'react-toastify';
+
 export const isTauri = () => (
   'rpc' in window
 ) // TODO: find the correct way to check for Tauri
@@ -23,3 +25,9 @@ export const UploadButton = ({id, icon, onChange}:
     <IconButtonSimple icon={icon}/>
   </label>
 )
+
+export const notifyPromise = (p: Promise<any>, msg: string) => toast.promise(p, {
+  pending: msg,
+  success: 'Done!',
+  error: "Something went wrong"
+});

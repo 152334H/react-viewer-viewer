@@ -14,9 +14,11 @@
     "@testing-library/user-event": "^13.5.0",
     "@types/jest": "^27.4.0",
     "file-saver": "^2.0.5",
+    "localforage": "^1.10.0",
     "react": "^17.0.2",
     "react-dom": "^17.0.2",
     "react-scripts": "5.0.0",
+    "react-toastify": "^8.2.0",
     "react-viewer": "github:152334H/react-viewer",
     "web-vitals": "^2.1.3"
   },

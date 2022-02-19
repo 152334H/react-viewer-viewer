@@ -32,7 +32,7 @@ type ReducedImages = {
     imgStates: DerefImageState[];
 }; 
 
-export {Images, FullImageState};
+export {Images, FullImageState, ReducedImages};
 
 const readerProducer = (meth: (r:FileReader)=>any) => (
  (blob:any) => new Promise((resolve) => {
@@ -64,11 +64,7 @@ const UploadAll = ({setImgs}: {setImgs:(imgs:Images)=>void}) => {
 
   const onChange = (e:any) => blobToText(e.target.files[0]).then((json: string) => {
     let obj: ReducedImages = JSON.parse(json);
-      Promise.all(obj.dataURLs.map(b64 => URLToBlob(b64).then(BlobToOURL))).then(urls => {
-      setImgs(obj.imgStates.map(im => (
-        {...im, src: urls[im.src]}
-      )))
-    })
+    uncompressImgs(obj).then(setImgs);
   })
 
   return <UploadButton id="icon-button-file-all"
@@ -76,7 +72,7 @@ const UploadAll = ({setImgs}: {setImgs:(imgs:Images)=>void}) => {
 }
 
 // TODO:check the speed of this (is it fast enough?)
-const compressImgs = (imgs:Images) => {
+export const compressImgs = (imgs:Images, b64:boolean=true) => {
   let dataURLs: string[] = [];
   let imgStates = imgs.map(i => {
     let ind = dataURLs.findIndex(d => d === i.src)
@@ -86,8 +82,17 @@ const compressImgs = (imgs:Images) => {
     }
     return {...i, src: ind}
   });
-    return Promise.all(dataURLs.map(objURL => URLToBlob(objURL).then(blobToB64)))
-        .then(dataURLs => ({dataURLs, imgStates}))
+  return Promise.all(dataURLs.map(
+      objURL => URLToBlob(objURL).then(b64 ? blobToB64 : b=>b)
+  )).then(dataURLs => ({dataURLs, imgStates}))
+}
+
+export const uncompressImgs = (compImgs:ReducedImages, b64:boolean=true) => {
+  return Promise.all(compImgs.dataURLs.map(
+     objURL => (b64 ? URLToBlob(objURL) : new Promise(r=>r(objURL))).then(BlobToOURL)
+  )).then(urls => compImgs.imgStates.map(im => (
+      {...im, src: urls[im.src]}
+  )));
 }
 
 // button 3: save image viewer state to pickle (image-$timestamp.json)
