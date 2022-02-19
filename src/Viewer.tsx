@@ -5,6 +5,8 @@ import * as React from 'react'
 import {FC} from 'react'
 // MUI imports
 import {KeyboardReturn} from '@mui/icons-material';
+import FormControlLabel from '@mui/material/FormControlLabel';
+import Switch from '@mui/material/Switch';
 // other imports
 // imports developed / edited for project
 import Viewer from 'react-viewer'
@@ -152,10 +154,13 @@ function sessReducer(s: SessionState, a: SessionStateCmd): SessionState {
         window.alert("setIndex out of bounds");
       }
       return {...s, activeIndex: a.val};
-    case 'dupeActiveImage':
-      window.alert("unimplemented");
-      return s;
-    case 'deleteActiveImage':
+    case 'dupeActiveImage': {
+      const activeIndex = s.activeIndex+1;
+      return {...s, activeIndex, imgs:
+        insertImage(s.imgs, s.imgs[s.activeIndex], activeIndex)
+      }
+    }
+    case 'deleteActiveImage': {
       // s.imgs.length guaranteed to be > 0
       const activeIndex = s.activeIndex ? s.activeIndex-1 : 0;
       const show = s.show && (
@@ -165,6 +170,7 @@ function sessReducer(s: SessionState, a: SessionStateCmd): SessionState {
       return {...s, activeIndex, show,
         imgs: popImage(s.activeIndex, s.imgs)
       };
+    }
     default:
       return s;
   }
@@ -176,6 +182,11 @@ const ViewerSession = ({sess,goBack}: {sess: Images, goBack: (sess:Images)=>void
   const [show,setShow] = React.useState(false)
   const [focused,setFocused] = React.useState(false);
   const [activeIndex, setActiveIndex] = React.useState(0)
+
+  const [state, dispatch] = React.useReducer(sessReducer, {
+    show, imgs, activeIndex
+  });
+  console.log('TODO:', state,dispatch);
 
   const updateImgs = (cb: (imgs:Images)=>Images) => {
     setImgs(imgs => cb(imgs));
@@ -190,9 +201,16 @@ const ViewerSession = ({sess,goBack}: {sess: Images, goBack: (sess:Images)=>void
   // TODO: save state upon goBack()
   return (<div className="App">
     <header className="App-header">
-      <div style={{float: 'right'}}>
+      <div style={{float:'right'}}>
         <IconButtonSimple icon={<KeyboardReturn/>}
-          onClick={()=>goBack(imgs)}/>
+        onClick={()=>goBack(imgs)}/>
+      </div>
+      <div style={{clear: 'both', float:'right'}}>
+        <FormControlLabel label="Focused" control={
+          <Switch checked={focused} onChange={
+            (e)=>setFocused(e.target.checked)
+          }/>
+        }/>
       </div>
       <h1>test</h1>
       <h5>zoom level: {window.devicePixelRatio}</h5>
