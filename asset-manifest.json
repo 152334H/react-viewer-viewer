@@ -1,10 +1,13 @@
 {
   "files": {
-    "main.js": "/react-viewer-viewer/static/js/main.98e451db.js",
+    "main.css": "/react-viewer-viewer/static/css/main.43c86f1c.css",
+    "main.js": "/react-viewer-viewer/static/js/main.29dfb896.js",
     "index.html": "/react-viewer-viewer/index.html",
-    "main.98e451db.js.map": "/react-viewer-viewer/static/js/main.98e451db.js.map"
+    "main.43c86f1c.css.map": "/react-viewer-viewer/static/css/main.43c86f1c.css.map",
+    "main.29dfb896.js.map": "/react-viewer-viewer/static/js/main.29dfb896.js.map"
   },
   "entrypoints": [
-    "static/js/main.98e451db.js"
+    "static/css/main.43c86f1c.css",
+    "static/js/main.29dfb896.js"
   ]
 }
