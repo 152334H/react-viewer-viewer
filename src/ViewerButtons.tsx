@@ -51,8 +51,8 @@ const Uploader = ({addImgs}: {addImgs: (urls:string[])=>void}) => {
   const onChange = (e:any) => // run addImg on all images uploaded
     Promise.all(Array.from(e.target.files)
       .filter((f:File) => f.type.match('image.*'))
-      .map(BlobToOURL))
-      .then(addImgs)
+      .map(BlobToOURL)
+    ).then(addImgs)
 
   return <UploadButton id="icon-button-file"
     icon={<PhotoCamera />} onChange={onChange}/>
@@ -72,6 +72,7 @@ const UploadAll = ({setImgs}: {setImgs:(imgs:Images)=>void}) => {
 }
 
 // TODO:check the speed of this (is it fast enough?)
+// TODO: refactor this (get rid of the b64 thing)
 export const compressImgs = (imgs:Images, b64:boolean=true) => {
   let dataURLs: string[] = [];
   let imgStates = imgs.map(i => {
@@ -87,6 +88,7 @@ export const compressImgs = (imgs:Images, b64:boolean=true) => {
   )).then(dataURLs => ({dataURLs, imgStates}))
 }
 
+// TODO: wrong typing due to b64 thing
 export const uncompressImgs = (compImgs:ReducedImages, b64:boolean=true) => {
   return Promise.all(compImgs.dataURLs.map(
      objURL => (b64 ? URLToBlob(objURL) : new Promise(r=>r(objURL))).then(BlobToOURL)

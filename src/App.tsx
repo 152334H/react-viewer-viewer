@@ -80,7 +80,7 @@ function saveSessions(sessions: Images[]) {
 //TODO:figure out the right type for sessions (maybe not pure Images[]?)
 //we should at least add an editable title for sessions
 //TODO:change sessions to use localstorage
-const App = () => {
+const RealApp = () => {
   const [menu,setMenu] = React.useState('main');
   const [vind,setVind] = React.useState(null);
   const [sessions,setSessions] = React.useState([]);
@@ -91,45 +91,47 @@ const App = () => {
     setSessions(sessions);
     saveSessions(sessions); // this will async
   }
-
-  return (<React.Fragment>
-    <ThemeProvider theme={createTheme({
-        palette: { mode : 'dark' }
-    })}>
-    <CssBaseline/>
-    {menu === 'main' ?
-      <MainMenu select={(i,rm=false) => {
-        if (i === null) {
-          i = sessions.length;
-          // don't bother writing this blank session to localstorage
-          setSessions(sessions.concat([[]]));
-        }
-        if (rm) {
-          setSaveSessions(sessions.slice(0,i)
-                  .concat(sessions.slice(i+1))
-          );
-        } else {
-          setVind(i);
-          setMenu('viewer');
-        }
-      }} sessions={sessions}/> :
-      <ViewerSession sess={sessions[vind]}
+  return (<> {menu === 'main' ?
+    <MainMenu select={(i,rm=false) => {
+      if (i === null) {
+        i = sessions.length;
+        // don't bother writing this blank session to localstorage
+        setSessions(sessions.concat([[]]));
+      }
+      if (rm) {
+        setSaveSessions(sessions
+          .slice(0,i).concat(sessions.slice(i+1))
+        );
+      } else {
+        setVind(i);
+        setMenu('viewer');
+      }
+    }} sessions={sessions}/> :
+    <ViewerSession sess={sessions[vind]}
       goBack={sess => {
         const newSessions = sessions.slice();
         newSessions[vind] = sess;
         setSaveSessions(newSessions);
         setMenu('main');
-      }}/>
-    }
-    </ThemeProvider>
-    <ToastContainer position="top-right"
-      autoClose={1000}
-      hideProgressBar
-      closeOnClick={false}
-      draggable={false}
-      pauseOnFocusLoss={false}
+      }}
     />
-  </React.Fragment>)
+  }</>);
 }
+
+const App = () => (<>
+  <ThemeProvider theme={createTheme({
+    palette: { mode : 'dark' }
+  })}>
+    <CssBaseline/>
+    <RealApp/>
+  </ThemeProvider>
+  <ToastContainer position="top-right"
+    autoClose={1000}
+    hideProgressBar
+    closeOnClick={false}
+    draggable={false}
+    pauseOnFocusLoss={false}
+  />
+</>)
 
 export default App
