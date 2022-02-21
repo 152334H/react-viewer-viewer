@@ -71,11 +71,11 @@ const UploadAll = ({setImgs}: {setImgs:(imgs:Images)=>void}) => {
     icon={<Upload/>} onChange={onChange}/>
 }
 
-// TODO:check the speed of this (is it fast enough?)
 // TODO: refactor this (get rid of the b64 thing)
 export const compressImgs = (imgs:Images, b64:boolean=true) => {
   let dataURLs: string[] = [];
   let imgStates = imgs.map(i => {
+    // this part is fast enough because we're using blob objectURLs (and not full base64 urls)
     let ind = dataURLs.findIndex(d => d === i.src)
     if (ind === -1) {
       dataURLs.push(i.src)
