@@ -7,6 +7,7 @@ import {FC} from 'react'
 import {KeyboardReturn} from '@mui/icons-material';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import Switch from '@mui/material/Switch';
+import InputBase from '@mui/material/InputBase';
 // other imports
 // imports developed / edited for project
 import Viewer from 'react-viewer'
@@ -41,7 +42,7 @@ const swappedImgs = (i: number, j: number, imgs: Images) => {
   return res;
 }
 
-type ButtonLambda = (dispatch: (cmd: SessionStateCmd) => void) => ToolbarConfig[];
+type ButtonLambda = (dispatch: (cmd: ImagesStateCmd) => void) => ToolbarConfig[];
 const makeButtons: ButtonLambda = (dispatch) => ([
   {
     key: "dupe",
@@ -93,16 +94,16 @@ type SimpleViewerProps = {
     state: {
       imgs: any[];
       activeIndex: number;
-      focused: boolean;
     };
+    focused: boolean;
     addedButtons: any[] // note: this is really ToolbarConfig[], but...
 };
 // the main component from react-viewer. default options written here
 // TODO: fix bug where clicking on image previews in the footer will not save the state of the image the viewer is leaving. Also, check if the rotation bug still exists.
-const ViewerButMoreSimple: FC<SimpleViewerProps> = ({setShow, setActiveIndex, addedButtons, state}) => {
+const ViewerButMoreSimple: FC<SimpleViewerProps> = ({setShow, setActiveIndex, addedButtons, state, focused}) => {
   return (<Viewer visible={true}
-    noFooter={state.focused}
-    noClose={state.focused}
+    noFooter={focused}
+    noClose={focused}
     zoomSpeed={0.1}
     drag={true} 
     noResetZoomAfterChange={true}
@@ -116,13 +117,17 @@ const ViewerButMoreSimple: FC<SimpleViewerProps> = ({setShow, setActiveIndex, ad
   />)
 }
 
-export type SessionState = {
+export interface ImagesState {
   show: boolean;
-  focused: boolean;
   imgs: Images;
   activeIndex: number;
 };
-type SessionStateCmd = {
+export interface SessionState extends ImagesState {
+  focused: boolean;
+  name: string;
+}
+
+type ImagesStateCmd = {
   type: string;
   val?: any;
 }
@@ -141,10 +146,8 @@ function popImage(i: number, imgs: Images) {
   );
   return imgs.slice(0,i).concat(right);
 }
-function sessReducer(s: SessionState, a: SessionStateCmd): SessionState {
+function sessReducer(s: ImagesState, a: ImagesStateCmd): ImagesState {
   switch (a.type) {
-    case 'toggleFocus':
-      return {...s, focused: !s.focused};
     case 'setShow':
       if (s.imgs.length === 0 && a.val) {
         window.alert("err: no images to show");
@@ -181,7 +184,7 @@ function sessReducer(s: SessionState, a: SessionStateCmd): SessionState {
           s.activeIndex, target, s.imgs
         ), activeIndex: target};
     }
-    case 'setImgs': {
+    case 'setImgs': { // will autodisplay upon upload
       const imgs = a.val;
       let aI = s.activeIndex;
       if (aI >= imgs.length) {
@@ -189,16 +192,20 @@ function sessReducer(s: SessionState, a: SessionStateCmd): SessionState {
         aI = imgs.length ? imgs.length-1 : 0;
         // TODO:this will not actually work because of the same bug that affects shift_image_*. Upstream...
       }
-      return {...s, imgs, activeIndex: aI};
+      return {...s, imgs, activeIndex: aI, show: imgs.length !== 0};
     }
     default:
       return s;
   }
 }
 
-const ViewerSession = ({sess,goBack}: {sess: Images, goBack: (sess:Images)=>void}) => {
+const ViewerSession = ({sess,goBack}: {
+  sess: SessionState, goBack: (sess:SessionState)=>void
+}) => {
+  const [name, setName] = React.useState(sess.name);
+  const [focused, setFocused] = React.useState(sess.focused);
   const [state, dispatch] = React.useReducer(sessReducer, {
-    show: false, focused: false, activeIndex: 0, imgs: sess
+    show: sess.show, activeIndex: sess.activeIndex, imgs: sess.imgs
   });
 
   const updateImgs = (imgs:Images) => {
@@ -216,20 +223,24 @@ const ViewerSession = ({sess,goBack}: {sess: Images, goBack: (sess:Images)=>void
     <header className="App-header">
       <div style={{float:'right'}}>
         <IconButtonSimple icon={<KeyboardReturn/>}
-        onClick={()=>goBack(state.imgs)}/>
+        onClick={()=>goBack({...state, focused, name})}/>
       </div>
       <div style={{clear: 'both', float:'right'}}>
         <FormControlLabel label="Focused" control={
-          <Switch checked={state.focused} onChange={
-            () => dispatch({type: 'toggleFocus'})
+          <Switch checked={focused} onChange={
+            (e) => setFocused(e.target.checked)
           }/>
         }/>
       </div>
-      <h1>test</h1>
+      <InputBase
+        placeholder="Session name"
+        value={name}
+        onChange={(e:any) => setName(e.target.value)}
+      />
       <h5>zoom level: {window.devicePixelRatio}</h5>
       <ViewerButtons setShow={setShow} imgs={state.imgs} updateImgs={updateImgs}/>
       {state.show && <ViewerButMoreSimple
-        state={state}
+        state={state} focused={focused}
         setShow={setShow}
         addedButtons={addedButtons}
         setActiveIndex={setActiveIndex}

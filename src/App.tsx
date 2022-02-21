@@ -27,12 +27,12 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import LF from 'localforage';
 import {ToastContainer} from 'react-toastify';
 
-import ViewerSession from './Viewer'
+import ViewerSession,{SessionState} from './Viewer'
 import {Images,compressImgs,uncompressImgs,ReducedImages} from './ViewerButtons'
 import {IconButtonSimple,notifyPromise} from './UI'
 
 const MainMenu = ({sessions,select}: {
-  sessions: Images[],
+  sessions: SessionState[],
   select: (i: null|number, rm?: boolean) => void
 }) => (<>
   <IconButtonSimple icon={<Add/>} onClick={() => select(null)}/>
@@ -47,17 +47,30 @@ const MainMenu = ({sessions,select}: {
         />}
       >
         <ListItemButton>
-          <ListItemText>{i}</ListItemText>
+          <ListItemText>{sess.name}</ListItemText>
         </ListItemButton>
     </ListItem>)}
   </List></div>}
 </>)
 
+const sessionFromImages = (imgs: Images) => ({
+  imgs, focused: false, show: false,
+  name: `session-${Date.now()}`, activeIndex: 0
+});
+
+interface StoredSession extends Omit<SessionState,'imgs'> {
+  reduced: ReducedImages
+}
+
 async function loadSessionsSilent() {
-  let compSessions: ReducedImages[] = await LF.getItem('sessions');
+  let compSessions: StoredSession[] = await LF.getItem('sessions');
   if (compSessions === null) return [];
   let sessions = await Promise.all(compSessions.map(async (sess) => {
-    return await uncompressImgs(sess, false);
+    const imgs = await uncompressImgs(sess.reduced, false);
+    return {imgs, focused: sess.focused,
+      show: sess.show, name: sess.name,
+      activeIndex: sess.activeIndex
+    }; // cannot use ...sess here because we want to throw out the .reduced attribute
   }));
   return sessions;
 }
@@ -68,25 +81,23 @@ function loadSessions() {
   return p
 }
 
-function saveSessions(sessions: Images[]) {
-  const p = Promise.all(
-    sessions.map(s => compressImgs(s,false))
-  ).then(sessions => LF.setItem('sessions', sessions));
+function saveSessions(sessions: SessionState[]) {
+  const p = Promise.all(sessions.map(s =>
+    compressImgs(s.imgs, false).then(imgs => (
+      {...s, reduced: imgs}
+  )))).then(sessions => LF.setItem('sessions', sessions));
   notifyPromise(p, 'saving sessions...');
   return p
 }
 
-//TODO:figure out the right type for sessions (maybe not pure Images[]?)
-//we should at least add an editable title for sessions
-//TODO:change sessions to use localstorage
 const RealApp = () => {
   const [menu,setMenu] = React.useState('main');
   const [vind,setVind] = React.useState(null);
-  const [sessions,setSessions] = React.useState([]);
+  const [sessions,setSessions] = React.useState<SessionState[]>([]);
 
   React.useEffect(() => {loadSessions().then(setSessions);}, []);
 
-  const setSaveSessions = (sessions: Images[]) => {
+  const setSaveSessions = (sessions: SessionState[]) => {
     setSessions(sessions);
     saveSessions(sessions); // this will async
   }
@@ -95,7 +106,7 @@ const RealApp = () => {
       if (i === null) {
         i = sessions.length;
         // don't bother writing this blank session to localstorage
-        setSessions(sessions.concat([[]]));
+        setSessions(sessions.concat(sessionFromImages([])));
       }
       if (rm) {
         setSaveSessions(sessions
