@@ -41,57 +41,47 @@ const swappedImgs = (i: number, j: number, imgs: Images) => {
   return res;
 }
 
-type ButtonLambda = (setImgs: (cb: (imgs:Images) => Images) => void, setActiveIndex: (i: number) => void) => ToolbarConfig[];
-const makeButtons: ButtonLambda = (setImgs, setActiveIndex) => ([
+type ButtonLambda = (dispatch: (cmd: SessionStateCmd) => void) => ToolbarConfig[];
+const makeButtons: ButtonLambda = (dispatch) => ([
   {
     key: "dupe",
     render: <IconLocal type="a"/>,
-    onClick: activeImage => {
-      setImgs(imgs => {
-        let newImgs = imgs.slice(0, activeImage.alt);
-        newImgs.push(activeImage);
-        return newImgs.concat(imgs.slice(activeImage.alt)
-          .map(i => ({...i,alt: i.alt+1})))
-      })
-      setActiveIndex(activeImage.alt+1)
+    onClick: () => {
+      dispatch({type:'dupeActiveImage'});
     }
   },
   {
     key: "trash",
     render: <IconLocal type="b"/>,
-    onClick: activeImage => {
-      setActiveIndex(activeImage.alt ? activeImage.alt-1 : 0)
-      setTimeout(() => setImgs(imgs => imgs
-        .slice(0, activeImage.alt)
-        .concat(imgs
-          .slice(activeImage.alt+1)
-          .map(i => ({...i,alt: i.alt-1}))
-        )
-      ), 0) // timeout forces sAI to run first. Needed to prevent oob index when .alt == imgs.length-1.
+    onClick: (activeImage: FullImageState) => {
+      if (activeImage.alt) {
+        dispatch({type:'setIndex', val: activeImage.alt-1})
+      }
+      setTimeout(() => // stupid hack to get around react-viewer bug
+        dispatch({type:'deleteImageAt', val:activeImage.alt})
+      ,0);
     }
   },
+  // TODO:shift_picture_* are visually bugged because imgs[] and ind do not update in sync for react-viewer. Upstream fix necessary.
   {
     key: "shift_picture_left",
     render: <IconLocal type="c"/>,
-    onClick: activeImage => {
+    onClick: (activeImage: FullImageState) => {
       const ind = activeImage.alt;
-      setImgs(imgs => {
-        if (!ind) { return imgs; }
-        setActiveIndex(ind-1); // TODO: race?
-        return swappedImgs(ind, ind-1, imgs)
-      });
+      if (ind > 0) {
+        dispatch({type:'moveActiveImage',
+                 val: ind-1});
+      }
     }
   },
   {
     key: "shift_picture_right",
     render: <IconLocal type="d"/>,
-    onClick: activeImage => {
+    onClick: (activeImage: FullImageState) => {
       const ind = activeImage.alt;
-      setImgs(imgs => {
-        if (ind+1 >= imgs.length) {return imgs}
-        setActiveIndex(ind+1);
-        return swappedImgs(ind, ind+1, imgs);
-      });
+      // will potentially cause errors
+      dispatch({type: 'moveActiveImage',
+               val:ind+1});
     }
   }
 ]);
@@ -100,43 +90,47 @@ const makeButtons: ButtonLambda = (setImgs, setActiveIndex) => ([
 type SimpleViewerProps = {
     setShow: (b: boolean) => void;
     setActiveIndex: (i:number) => void;
-    activeIndex: number;
-    focused: boolean;
-    imgs: any[]; // note: this is really Images, but due to our use of the .alt attribute as a shim...
+    state: {
+      imgs: any[];
+      activeIndex: number;
+      focused: boolean;
+    };
     addedButtons: any[] // note: this is really ToolbarConfig[], but...
 };
 // the main component from react-viewer. default options written here
 // TODO: fix bug where clicking on image previews in the footer will not save the state of the image the viewer is leaving. Also, check if the rotation bug still exists.
-const ViewerButMoreSimple: FC<SimpleViewerProps> = ({setShow, setActiveIndex, activeIndex, focused, imgs, addedButtons}) => {
+const ViewerButMoreSimple: FC<SimpleViewerProps> = ({setShow, setActiveIndex, addedButtons, state}) => {
   return (<Viewer visible={true}
-    noFooter={focused} noClose={focused}
+    noFooter={state.focused}
+    noClose={state.focused}
     zoomSpeed={0.1}
     drag={true} 
     noResetZoomAfterChange={true}
     noLimitInitializationSize={true}
     maxScale={500}
     onClose={() => setShow(false)}
-    images={imgs}
+    images={state.imgs}
     customToolbar={ls => ls.concat(addedButtons)}
     onIndexChange={setActiveIndex}
-    activeIndex={activeIndex}
+    activeIndex={state.activeIndex}
   />)
 }
 
-type SessionState = {
+export type SessionState = {
   show: boolean;
+  focused: boolean;
   imgs: Images;
   activeIndex: number;
 };
 type SessionStateCmd = {
   type: string;
-  val: any;
+  val?: any;
 }
 
 
 function insertImage(imgs: Images, im: FullImageState, i: number) {
   im.alt = i;
-  const right = imgs.slice(i+1).map(
+  const right = imgs.slice(i).map(
     im => ({...im, alt: im.alt+1})
   );
   return imgs.slice(0,i).concat(im,right);
@@ -149,6 +143,13 @@ function popImage(i: number, imgs: Images) {
 }
 function sessReducer(s: SessionState, a: SessionStateCmd): SessionState {
   switch (a.type) {
+    case 'toggleFocus':
+      return {...s, focused: !s.focused};
+    case 'setShow':
+      if (s.imgs.length === 0 && a.val) {
+        window.alert("err: no images to show");
+      }
+      return {...s, show: a.val};
     case 'setIndex':
       if (a.val >= s.imgs.length || a.val < 0){
         window.alert("setIndex out of bounds");
@@ -157,70 +158,81 @@ function sessReducer(s: SessionState, a: SessionStateCmd): SessionState {
     case 'dupeActiveImage': {
       const activeIndex = s.activeIndex+1;
       return {...s, activeIndex, imgs:
-        insertImage(s.imgs, s.imgs[s.activeIndex], activeIndex)
+        insertImage(s.imgs, {...s.imgs[s.activeIndex]}, activeIndex)
       }
     }
-    case 'deleteActiveImage': {
-      // s.imgs.length guaranteed to be > 0
-      const activeIndex = s.activeIndex ? s.activeIndex-1 : 0;
-      const show = s.show && (
-        s.imgs.length===1 ? true : false
-      ); // hide viewer if there'll be nothing
+    case 'deleteImageAt': {
+      if (a.val >= s.imgs.length || a.val < 0){
+        window.alert("deleteImageAt out of bounds");
+      }
+      // hide viewer if there'll be nothing
+      const show = s.show && s.imgs.length!==1;
       //
-      return {...s, activeIndex, show,
-        imgs: popImage(s.activeIndex, s.imgs)
-      };
+      const imgs = popImage(a.val, s.imgs);
+      return {...s, show, imgs};
+    }
+    case 'moveActiveImage': {
+      const target: number = a.val;
+      if (target >= s.imgs.length || target < 0) {
+        window.alert("moveActiveImage out of bounds. Ignoring update...");
+        return s;
+      }
+      return {...s, imgs: swappedImgs(
+          s.activeIndex, target, s.imgs
+        ), activeIndex: target};
+    }
+    case 'setImgs': {
+      const imgs = a.val;
+      let aI = s.activeIndex;
+      if (aI >= imgs.length) {
+        window.alert('setImgs: activeIndex out of bounds; shrinking');
+        aI = imgs.length ? imgs.length-1 : 0;
+        // TODO:this will not actually work because of the same bug that affects shift_image_*. Upstream...
+      }
+      return {...s, imgs, activeIndex: aI};
     }
     default:
       return s;
   }
 }
 
-// TODO: button to hide the toolbar and etc
 const ViewerSession = ({sess,goBack}: {sess: Images, goBack: (sess:Images)=>void}) => {
-  const [imgs,setImgs] = React.useState(sess)
-  const [show,setShow] = React.useState(false)
-  const [focused,setFocused] = React.useState(false);
-  const [activeIndex, setActiveIndex] = React.useState(0)
-
   const [state, dispatch] = React.useReducer(sessReducer, {
-    show, imgs, activeIndex
+    show: false, focused: false, activeIndex: 0, imgs: sess
   });
-  console.log('TODO:', state,dispatch);
 
-  const updateImgs = (cb: (imgs:Images)=>Images) => {
-    setImgs(imgs => cb(imgs));
-    setShow(true);
+  const updateImgs = (imgs:Images) => {
+    dispatch({type:'setImgs', val: imgs});
   }
-  const addedButtons = makeButtons(setImgs, setActiveIndex)
-
-  if (imgs.length === 0 && show) {
-    setShow(false); // this is when all images get deleted
+  const setShow = (b: boolean) => {
+    dispatch({type:'setShow', val:b});
   }
+  const setActiveIndex = (i: number) => {
+    dispatch({type:'setIndex', val:i});
+  }
+  const addedButtons = makeButtons(dispatch)
 
-  // TODO: save state upon goBack()
   return (<div className="App">
     <header className="App-header">
       <div style={{float:'right'}}>
         <IconButtonSimple icon={<KeyboardReturn/>}
-        onClick={()=>goBack(imgs)}/>
+        onClick={()=>goBack(state.imgs)}/>
       </div>
       <div style={{clear: 'both', float:'right'}}>
         <FormControlLabel label="Focused" control={
-          <Switch checked={focused} onChange={
-            (e)=>setFocused(e.target.checked)
+          <Switch checked={state.focused} onChange={
+            () => dispatch({type: 'toggleFocus'})
           }/>
         }/>
       </div>
       <h1>test</h1>
       <h5>zoom level: {window.devicePixelRatio}</h5>
-      <ViewerButtons setShow={setShow} imgs={imgs} updateImgs={updateImgs}/>
-      {show && <ViewerButMoreSimple
-        imgs={imgs}
+      <ViewerButtons setShow={setShow} imgs={state.imgs} updateImgs={updateImgs}/>
+      {state.show && <ViewerButMoreSimple
+        key={state.imgs.length}
+        state={state}
         setShow={setShow}
-        focused={focused}
         addedButtons={addedButtons}
-        activeIndex={activeIndex}
         setActiveIndex={setActiveIndex}
       />}
     </header>

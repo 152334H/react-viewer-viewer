@@ -204,21 +204,20 @@ const ZipButton = ({imgs}: {imgs:Images}) => {
 interface VBProps {
   setShow: (b:boolean) => void;
   imgs: Images;
-  updateImgs: (callback: (imgs:Images)=>Images) => void;
+  updateImgs: (imgs:Images) => void;
 }
 
 export const ViewerButtons: FC<VBProps> = (
   {setShow,imgs,updateImgs}
   ) => {
-  // TODO: in UploadAll, why do I need that updateImgs wrapper?
   return (<>
-    <Uploader addImgs={(ls:string[]) => updateImgs(_ => imgs
+    <Uploader addImgs={(ls:string[]) => updateImgs(imgs
       .concat(ls.map((url,ind) => ({
           src: url, alt: imgs.length+ind,
           scale: 1, left: 0, top: 0, rotate: 0
       })))
     )}/>
-    <UploadAll setImgs={imgs => updateImgs(()=>imgs)}/>
+    <UploadAll setImgs={updateImgs}/>
     {imgs.length>0 && (()=>(<>
       <IconButtonSimple icon={<Collections/>}
         onClick={() => setShow(true)}/>

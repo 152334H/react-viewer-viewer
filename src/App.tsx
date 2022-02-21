@@ -8,10 +8,9 @@
    * fix res => res.blob()
    * draggable preview of images (to reorganise)
    * Drag and drop for file upload?
-   * instead of scattered zips and jsons, create an actual storage (and appropriate listing) for all of the viewerstates
    * Finally implement the no-toolbar mode we originally planned. Will be possible (not incredibly slow) since image flattening from tauri is possible.
    * fix typing
-   * merge together relevant state variables into objects. https://reactjs.org/docs/hooks-reference.html use something that isn't useState
+   * figure out how to accomodate for different zoom values across devices
 */
 
 import * as React from 'react';
