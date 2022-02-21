@@ -229,7 +229,6 @@ const ViewerSession = ({sess,goBack}: {sess: Images, goBack: (sess:Images)=>void
       <h5>zoom level: {window.devicePixelRatio}</h5>
       <ViewerButtons setShow={setShow} imgs={state.imgs} updateImgs={updateImgs}/>
       {state.show && <ViewerButMoreSimple
-        key={state.imgs.length}
         state={state}
         setShow={setShow}
         addedButtons={addedButtons}
