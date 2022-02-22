@@ -195,7 +195,7 @@ const FlattenButton = ({imgs, setFlattened}: {imgs:Images, setFlattened: (b: nul
   return <LoadingButton icon={<Archive/>} onClick={() => {
     // this will be really slow!
     return flattenImages(imgs, window.devicePixelRatio).then((flattened: Images) => {
-      setFlattened(flattened);
+      setFlattened(flattened); // TODO possibly a minor bug here with activeIndex going out of sync
     }).catch(e => {
         window.alert(`something went wrong in tauri command "flatten_images": ${e}`);
         throw new Error('invoke error')
