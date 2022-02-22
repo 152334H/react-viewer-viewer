@@ -73,17 +73,17 @@ const UploadAll = ({setImgs}: {setImgs:(imgs:Images)=>void}) => {
 
 // TODO: refactor this (get rid of the b64 thing)
 export const compressImgs = (imgs:Images, b64:boolean=true) => {
-  let dataURLs: string[] = [];
+  let objURLs: string[] = [];
   let imgStates = imgs.map(i => {
     // this part is fast enough because we're using blob objectURLs (and not full base64 urls)
-    let ind = dataURLs.findIndex(d => d === i.src)
+    let ind = objURLs.findIndex(d => d === i.src)
     if (ind === -1) {
-      dataURLs.push(i.src)
-      ind = dataURLs.length - 1
+      objURLs.push(i.src)
+      ind = objURLs.length - 1
     }
     return {...i, src: ind}
   });
-  return Promise.all(dataURLs.map(
+  return Promise.all(objURLs.map(
       objURL => URLToBlob(objURL).then(b64 ? blobToB64 : b=>b)
   )).then(dataURLs => ({dataURLs, imgStates}))
 }
@@ -156,6 +156,16 @@ const LoadingButton = ({icon, onClick}:
   </Box>);
 }
 
+const flattenImages = async (imgs:Images, zoom:number) => {
+  const compImgs = await compressImgs(imgs,false);
+  const flattened: Uint8Array[] = await invoke('flatten_images', { rawImgs: compImgs.dataURLs, derefImgStates: compImgs.imgStates, zoom })
+  return flattened
+    .map(d => new Blob([d],{type:'image/png'}))
+    .map((b,i) => ({ src: BlobToOURL(b), alt:i,
+         scale: 1, left: 0, top: 0, rotate: 0
+    }));
+}
+
 // button 4: save image viewer state to a bunch of images in a zip
 const CompileButton = ({imgs}: {imgs:Images}) => {
   if (!isTauri())
@@ -179,23 +189,15 @@ const CompileButton = ({imgs}: {imgs:Images}) => {
 }
 
 // button 5: TESTING
-const ZipButton = ({imgs}: {imgs:Images}) => {
+const FlattenButton = ({imgs, setFlattened}: {imgs:Images, setFlattened: (b: null|Images) => void}) => {
   if (!isTauri())
     return <></>;
   return <LoadingButton icon={<Archive/>} onClick={() => {
     // this will be really slow!
-    return invoke('zip_imagestate', {json:
-        //{imgStates: imgs, zoom: window.devicePixelRatio}
-        {json_images: imgs, zoom: window.devicePixelRatio}
-      }).then(res => {
-        window.alert(res);
-          /*
-        let byteArray = new Uint8Array(res);
-        saveAs(new Blob([byteArray], {type: "application/zip"}),
-      `images-${Date.now()}.zip`)
-      */
-      }).catch(e => {
-        window.alert(`something went wrong in tauri command "zip_imagestate": ${e}`);
+    return flattenImages(imgs, window.devicePixelRatio).then((flattened: Images) => {
+      setFlattened(flattened);
+    }).catch(e => {
+        window.alert(`something went wrong in tauri command "flatten_images": ${e}`);
         throw new Error('invoke error')
       })
   }}/>
@@ -205,10 +207,11 @@ interface VBProps {
   setShow: (b:boolean) => void;
   imgs: Images;
   updateImgs: (imgs:Images) => void;
+  setFlattened: (flat: null|Images) => void;
 }
 
 export const ViewerButtons: FC<VBProps> = (
-  {setShow,imgs,updateImgs}
+  {setShow,imgs,updateImgs,setFlattened}
   ) => {
   return (<>
     <Uploader addImgs={(ls:string[]) => updateImgs(imgs
@@ -223,7 +226,7 @@ export const ViewerButtons: FC<VBProps> = (
         onClick={() => setShow(true)}/>
       <SaveAll imgs={imgs}/>
       <CompileButton imgs={imgs}/>
-      <ZipButton imgs={imgs}/>
+      <FlattenButton imgs={imgs} setFlattened={setFlattened}/>
     </>))()}
   </>);
 }

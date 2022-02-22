@@ -207,9 +207,12 @@ const ViewerSession = ({sess,goBack}: {
   const [state, dispatch] = React.useReducer(sessReducer, {
     show: sess.show, activeIndex: sess.activeIndex, imgs: sess.imgs
   });
+  const [flattened, setFlattened] = React.useState<null|Images>(null);
 
-  const updateImgs = (imgs:Images) => {
+  const updateImgs = flattened === null ? (imgs:Images) => {
     dispatch({type:'setImgs', val: imgs});
+  } : (imgs:Images) => {
+    setFlattened(imgs); // imgs.length should be immutable in this case.
   }
   const setShow = (b: boolean) => {
     dispatch({type:'setShow', val:b});
@@ -227,9 +230,10 @@ const ViewerSession = ({sess,goBack}: {
       </div>
       <div style={{clear: 'both', float:'right'}}>
         <FormControlLabel label="Focused" control={
-          <Switch checked={focused} onChange={
-            (e) => setFocused(e.target.checked)
-          }/>
+          <Switch checked={focused} disabled={flattened===null} onChange={(e) => {
+            if (!e.target.checked) setFlattened(null); // purge flattened images if changes are needed
+            setFocused(e.target.checked);
+          }}/>
         }/>
       </div>
       <InputBase
@@ -238,9 +242,9 @@ const ViewerSession = ({sess,goBack}: {
         onChange={(e:any) => setName(e.target.value)}
       />
       <h5>zoom level: {window.devicePixelRatio}</h5>
-      <ViewerButtons setShow={setShow} imgs={state.imgs} updateImgs={updateImgs}/>
+      <ViewerButtons setShow={setShow} imgs={state.imgs} updateImgs={updateImgs} setFlattened={setFlattened}/>
       {state.show && <ViewerButMoreSimple
-        state={state} focused={focused}
+        state={(flattened !== null && focused) ? {...state, imgs: flattened} : state} focused={focused}
         setShow={setShow}
         addedButtons={addedButtons}
         setActiveIndex={setActiveIndex}
