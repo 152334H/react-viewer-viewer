@@ -5,7 +5,7 @@ import Input from '@mui/material/Input';
 import {toast} from 'react-toastify';
 
 export const isTauri = () => (
-  'rpc' in window
+  '__TAURI__' in window
 ) // TODO: find the correct way to check for Tauri
 
 export const IconButtonSimple = ({icon, onClick=()=>{}}:
