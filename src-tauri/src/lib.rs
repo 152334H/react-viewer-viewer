@@ -89,7 +89,7 @@ pub struct JSONImages {
 #[derive(Serialize, Deserialize)]
 pub struct JSONImagesU8 {
     pub dataURLs: Vec<Vec<u8>>,
-    imgStates: Vec<JSONCompressedImgState>
+    pub imgStates: Vec<JSONCompressedImgState>
 }
 
 struct ImgStateRef<'a> {
@@ -255,6 +255,48 @@ pub fn compressed_viewer_to_zip(json: JSONImages, zoom: f64) -> AResult<Vec<u8>>
 }
 
 /// testing code
+
+pub fn for_each_image_u8<F>(json: JSONImagesU8, zoom: f64, callback: F) -> AResult<()>
+where F: Fn(usize,Img) -> AResult<()> + Send + Sync {
+    // TODO: parallise this COMPLETELY.
+    // Issue is that it is difficult to flat_map() a Result<>
+    // idea: some kind of mpsc?
+    // (perf hit is probably marginal, but)
+    let raw_imgs: AResult<Vec<DynamicImage>> = json.dataURLs
+        .into_par_iter().map(|blob| {
+        Ok(image::io::Reader::new(Cursor::new(&blob))
+               .with_guessed_format()?.decode()?)
+    }).collect(); // this collect will magically spit out a single error if any happens
+    let raw_imgs = raw_imgs?;
+    println!("all raw images loaded");
+    json.imgStates.into_par_iter().map(|is| {
+        (ImgStateRef {
+            img: &raw_imgs[is.src],
+            scale: is.scale,
+            pos: (is.left as i32, is.top as i32),
+            rotate: is.rotate,
+            zoom
+        }).into()
+    }).enumerate().try_for_each(|(i,isr)| -> AResult<()> {
+        callback(i,isr)
+    })?;
+    Ok(())
+}
+
+pub fn deref_viewer_to_zip(json: JSONImagesU8, zoom: f64) -> AResult<Vec<Vec<u8>>> {
+    let mut res = vec![None; json.imgStates.len()];
+    let res_mutex = Arc::new(Mutex::new(&mut res));
+    //
+    for_each_image_u8(json, zoom, |i,img| {
+        let buf = encode_img(img)?;
+        let mut res_ref = res_mutex.lock().unwrap();
+        res_ref[i] = Some(buf);
+        Ok(())
+    })?;
+    //
+    Ok(res.into_iter().map(|x| x.unwrap()).collect())
+}
+
 //
 #[cfg(test)]
 mod tests {

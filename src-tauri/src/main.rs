@@ -14,7 +14,7 @@
  */
 
 mod lib;
-use lib::{JSONImages, compressed_viewer_to_zip};
+use lib::{JSONImages, compressed_viewer_to_zip, deref_viewer_to_zip, JSONCompressedImgState};
 use serde::{Serialize, Deserialize};
 #[derive(Serialize, Deserialize)]
 pub struct JSONCompViewerState {
@@ -35,18 +35,14 @@ pub struct JSONCompViewerStateU8 {
 }
 // TODO: test this command so that we can move on with the "send a compressed state" plan
 #[tauri::command]
-async fn zip_imagestate(json: JSONCompViewerStateU8) -> Result<Vec<usize>, String> {
-    let mut res = vec![json.json_images.dataURLs.len()];
-    for vec in json.json_images.dataURLs {
-        res.push(vec.len());
-    }
-    Ok(res)
+async fn flatten_images(raw_imgs: Vec<Vec<u8>>, deref_img_states: Vec<JSONCompressedImgState>, zoom: f64) -> Result<Vec<Vec<u8>>, String> {
+    deref_viewer_to_zip(JSONImagesU8 { dataURLs: raw_imgs, imgStates: deref_img_states }, zoom).map_err(|e| e.to_string())
 }
 
 fn main() {
   tauri::Builder::default()
     .invoke_handler(tauri::generate_handler![compile_compressed_images])
-    .invoke_handler(tauri::generate_handler![zip_imagestate])
+    .invoke_handler(tauri::generate_handler![flatten_images])
     .run(tauri::generate_context!())
     .expect("error while running tauri application");
 }
