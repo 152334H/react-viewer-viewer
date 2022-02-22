@@ -45,7 +45,7 @@ jobs:
           ${{env.USERPROFILE}}\.cargo\git\db\
           src-tauri\target\
         key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-    - uses: tauri-apps/tauri-action@v0
+    - uses: tauri-apps/tauri-action@dev #TODO: switch back to stable version when possible
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with: # __VERSION__ refers to the number in src-tauri/tauri.conf.json
