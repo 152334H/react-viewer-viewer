@@ -51,7 +51,16 @@ jobs:
       with: # __VERSION__ refers to the number in src-tauri/tauri.conf.json
         tagName: app-v__VERSION__ # the action automatically replaces \_\_VERSION\_\_ with the app version
         releaseName: "App v__VERSION__"
-        releaseBody: "See the assets to download this version and install."
+        releaseBody: "Probably broken"
+        releaseDraft: true
+        prerelease: true
+    - uses: tauri-apps/tauri-action@dev
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tagName: app-debug-v__VERSION__ 
+        releaseName: "App debug v__VERSION__"
+        releaseBody: "Debug build"
         releaseDraft: true
         prerelease: false
-        includeDebug: false
+        args: "--debug"
