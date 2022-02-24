@@ -41,8 +41,7 @@ async fn flatten_images(raw_imgs: Vec<Vec<u8>>, deref_img_states: Vec<JSONCompre
 
 fn main() {
   tauri::Builder::default()
-    .invoke_handler(tauri::generate_handler![compile_compressed_images])
-    .invoke_handler(tauri::generate_handler![flatten_images])
+    .invoke_handler(tauri::generate_handler![flatten_images, compile_compressed_images])
     .run(tauri::generate_context!())
     .expect("error while running tauri application");
 }
