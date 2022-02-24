@@ -158,8 +158,12 @@ const LoadingButton = ({icon, onClick}:
 
 const flattenImages = async (imgs:Images, zoom:number) => {
   const compImgs = await compressImgs(imgs,false);
-  console.log(compImgs);
-  const flattened: Uint8Array[] = await invoke('flatten_images', { rawImgs: compImgs.dataURLs, derefImgStates: compImgs.imgStates, zoom })
+  const dataArrays: Uint8Array[] = await Promise.all(compImgs.dataURLs.map(
+     async (b:Blob) => new Uint8Array(await b.arrayBuffer())
+  ));
+  const flattened: Uint8Array[] = await invoke('flatten_images', {
+    rawImgs: dataArrays, derefImgStates: compImgs.imgStates, zoom
+  });
   return flattened
     .map(d => new Blob([d],{type:'image/png'}))
     .map((b,i) => ({ src: BlobToOURL(b), alt:i,
@@ -191,7 +195,7 @@ const CompileButton = ({imgs}: {imgs:Images}) => {
 
 // button 5: TESTING
 const FlattenButton = ({imgs, setFlattened}: {imgs:Images, setFlattened: (b: null|Images) => void}) => {
-  //if (!isTauri()) return <></>;
+  if (!isTauri()) return <></>;
   return <LoadingButton icon={<Archive/>} onClick={() => {
     // this will be really slow!
     return flattenImages(imgs, window.devicePixelRatio).then((flattened: Images) => {

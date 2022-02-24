@@ -45,7 +45,7 @@ jobs:
           ${{env.USERPROFILE}}\.cargo\git\db\
           src-tauri\target\
         key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-    - uses: tauri-apps/tauri-action@dev #TODO: switch back to stable version when possible
+    - uses: tauri-apps/tauri-action@934ddadf57235acdc8de8bfa3d4be97a3d863730
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with: # __VERSION__ refers to the number in src-tauri/tauri.conf.json
@@ -53,5 +53,5 @@ jobs:
         releaseName: "App v__VERSION__"
         releaseBody: "See the assets to download this version and install."
         releaseDraft: true
-        prerelease: false
+        prerelease: true
         includeDebug: true
