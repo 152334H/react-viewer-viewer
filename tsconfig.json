@@ -12,5 +12,5 @@
         "jsx": "react",
         "noImplicitAny": true
     },
-    "exclude": [ "node_modules", "dist" ]
+    "exclude": [ "node_modules", "dist", "src-tauri" ]
 }
