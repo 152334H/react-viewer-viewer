@@ -26,6 +26,18 @@ thiserror = "1.0"
 default = [ "custom-protocol" ]
 custom-protocol = [ "tauri/custom-protocol" ]
 
+# don't bother debugging dependencies
+[profile.dev.package."*"]
+overflow-checks = false
+incremental = false
+opt-level = 2
+debug = 0
+
+[profile.dev]
+incremental = false # .dev has incremental on by default.
+opt-level = 2
+debug = 1
+
 [profile.release]
 panic = "abort"
 lto = "thin"
