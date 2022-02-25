@@ -156,7 +156,7 @@ const LoadingButton = ({icon, onClick}:
   </Box>);
 }
 
-const flattenImages = async (imgs:Images) => {
+export const flattenImages = async (imgs:Images) => {
   const compImgs = await compressImgs(imgs) as ReducedImages; // base64 strings
   const flattened = await invoke('flatten_images', {
     compImgs: compImgs.dataURLs, derefImgStates: compImgs.imgStates
@@ -193,20 +193,6 @@ const CompileButton = ({imgs}: {imgs:Images}) => {
   }}/>
 }
 
-// button 5: TESTING
-const FlattenButton = ({imgs, setFlattened}: {imgs:Images, setFlattened: (b: null|Images) => void}) => {
-  //if (!isTauri()) return <></>;
-  return <LoadingButton icon={<Archive/>} onClick={() => {
-    // this will be really slow!
-    return flattenImages(imgs).then((flattened: Images) => {
-      setFlattened(flattened); // TODO possibly a minor bug here with activeIndex going out of sync
-    }).catch(e => {
-        window.alert(`something went wrong in tauri command "flatten_images": ${e}`);
-        throw new Error('invoke error')
-      })
-  }}/>
-}
-
 interface VBProps {
   setShow: (b:boolean) => void;
   imgs: Images;
@@ -230,7 +216,6 @@ export const ViewerButtons: FC<VBProps> = (
         onClick={() => setShow(true)}/>
       <SaveAll imgs={imgs}/>
       <CompileButton imgs={imgs}/>
-      <FlattenButton imgs={imgs} setFlattened={setFlattened}/>
     </>))()}
   </>);
 }

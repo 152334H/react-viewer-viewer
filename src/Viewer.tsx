@@ -12,11 +12,12 @@ import InputBase from '@mui/material/InputBase';
 // imports developed / edited for project
 import Viewer from 'react-viewer'
 
-import {IconButtonSimple} from './UI'
+import {IconButtonSimple,notifyPromise,isTauri} from './UI'
 import {ViewerButtons} from './ViewerButtons'
 
 // TODO:move these types somewhere more sensible
 import {Images,FullImageState} from './ViewerButtons'
+import {flattenImages} from './ViewerButtons'
 
 interface ToolbarConfig { // private from react-viewer/ViewerProps
     key: string;
@@ -207,6 +208,7 @@ const ViewerSession = ({sess,goBack}: {
     show: sess.show, activeIndex: sess.activeIndex, imgs: sess.imgs
   });
   const [flattened, setFlattened] = React.useState<null|Images>(null);
+  const [focusLocked, setFocusLocked] = React.useState(false);
   const focused = flattened !== null;
 
   const updateImgs = focused ? (imgs:Images) => setFlattened(imgs)  // imgs.length should be immutable in this case.
@@ -214,7 +216,18 @@ const ViewerSession = ({sess,goBack}: {
   const setShow = (b: boolean) => dispatch({type:'setShow', val:b});
   const setActiveIndex = (i: number) => dispatch({type:'setIndex', val:i});
   const addedButtons = makeButtons(dispatch);
-  // TODO: instead of a flatten button & focus switch, just make the switch generate the flattened state.
+  const makeFlattened = () => {
+    const p = flattenImages(state.imgs).then((flattened: Images) => {
+      setActiveIndex(0); // send viewer back to start of images
+      setFlattened(flattened);
+    }).catch(e => {
+      window.alert(`something went wrong in tauri command "flatten_images": ${e}`);
+      throw new Error('invoke error')
+    });
+    notifyPromise(p, 'Flattening images...');
+    return p;
+  }
+
   return (<div className="App">
     <header className="App-header">
       <div style={{float:'right'}}>
@@ -223,9 +236,11 @@ const ViewerSession = ({sess,goBack}: {
       </div>
       <div style={{clear: 'both', float:'right'}}>
         <FormControlLabel label="Focused" control={
-          <Switch checked={focused} disabled={focused} onChange={(e) => {
-            if (e.target.checked) { window.alert("Something went wrong in focus switch!") }
-            else { setFlattened(null); } // purge flattened images when changes are needed
+          <Switch checked={focused} disabled={focusLocked || !isTauri()} onChange={(e) => {
+            if (e.target.checked) {
+              setFocusLocked(true)
+              makeFlattened().then(() => setFocusLocked(false));
+            } else { setFlattened(null); } // purge flattened images when changes are needed
           }}/>
         }/>
       </div>
