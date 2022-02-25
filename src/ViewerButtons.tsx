@@ -160,8 +160,10 @@ const flattenImages = async (imgs:Images, zoom:number) => {
   const compImgs = await compressImgs(imgs) as ReducedImages; // base64 strings
   const flattened = await invoke('flatten_images', {
     compImgs: compImgs.dataURLs, derefImgStates: compImgs.imgStates, zoom
-  }).catch(e => window.alert("rust::flatten_images: "+e)) as Uint8Array[];
+  }).catch(e => window.alert("rust::flatten_images: "+e)) as any[];
+  console.log(flattened);
   return flattened
+    .map((arr: number[]) => new Uint8Array(arr))
     .map(d => new Blob([d],{type:'image/png'}))
     .map((b,i) => ({ src: BlobToOURL(b), alt:i,
          scale: 1, left: 0, top: 0, rotate: 0
