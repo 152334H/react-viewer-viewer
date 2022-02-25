@@ -230,11 +230,11 @@ pub fn compressed_viewer_to_zip(json: JSONImages, zoom: f64) -> AResult<Vec<u8>>
 
 /// testing code
 
-pub fn compressed_viewer_to_flat(json: JSONImages, zoom: f64) -> AResult<Vec<Vec<u8>>> {
+pub fn compressed_viewer_to_flat(json: JSONImages) -> AResult<Vec<Vec<u8>>> {
     let mut res = vec![None; json.imgStates.len()];
     let res_mutex = Arc::new(Mutex::new(&mut res));
     //
-    for_each_image(json, zoom, |i,img| {
+    for_each_image(json, 1.0, |i,img| {
         let buf = encode_img(img)?;
         let mut res_ref = res_mutex.lock().unwrap();
         res_ref[i] = Some(buf);
@@ -258,6 +258,19 @@ mod tests {
     fn parse_compressed_json(path: impl AsRef<Path>) -> Result<JSONImages, Box<dyn Error>> {
         let json_str = read_to_string(path)?;
         Ok(serde_json::from_str(&json_str)?)
+    }
+
+    #[test]
+    fn compressed_json_to_image_files2() {
+        let now = Instant::now();
+        let json = parse_compressed_json("tests/test.json").unwrap();
+        for_each_image(json, ZOOM, |i,im| {
+            let correct = std::fs::read(format!("tests/{}.png",i))?;
+            let ans = encode_img(im)?;
+            assert!(ans == correct);
+            Ok(())
+        }).unwrap();
+        println!("Elapsed -1: {:.2?}", now.elapsed());
     }
 
     #[test]

@@ -156,12 +156,13 @@ const LoadingButton = ({icon, onClick}:
   </Box>);
 }
 
-const flattenImages = async (imgs:Images, zoom:number) => {
+const flattenImages = async (imgs:Images) => {
   const compImgs = await compressImgs(imgs) as ReducedImages; // base64 strings
   const flattened = await invoke('flatten_images', {
-    compImgs: compImgs.dataURLs, derefImgStates: compImgs.imgStates, zoom
+    compImgs: compImgs.dataURLs, derefImgStates: compImgs.imgStates
   }).catch(e => window.alert("rust::flatten_images: "+e)) as any[];
-  console.log(flattened); 
+  // TODO: figure out how to make the serialisation send/return Uint8Array, not number[]
+  //console.log(flattened); 
   return flattened
     .map((arr: number[]) => new Uint8Array(arr))
     .map(d => new Blob([d],{type:'image/png'}))
@@ -197,7 +198,7 @@ const FlattenButton = ({imgs, setFlattened}: {imgs:Images, setFlattened: (b: nul
   //if (!isTauri()) return <></>;
   return <LoadingButton icon={<Archive/>} onClick={() => {
     // this will be really slow!
-    return flattenImages(imgs, window.devicePixelRatio).then((flattened: Images) => {
+    return flattenImages(imgs).then((flattened: Images) => {
       setFlattened(flattened); // TODO possibly a minor bug here with activeIndex going out of sync
     }).catch(e => {
         window.alert(`something went wrong in tauri command "flatten_images": ${e}`);

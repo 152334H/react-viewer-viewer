@@ -27,8 +27,8 @@ async fn compile_compressed_images(json: JSONCompViewerState) -> Result<Vec<u8>,
 
 // TODO: test this command so that we can move on with the "send a compressed state" plan
 #[tauri::command]
-async fn flatten_images(comp_imgs: Vec<String>, deref_img_states: Vec<JSONCompressedImgState>, zoom: f64) -> Result<Vec<Vec<u8>>, String> {
-    compressed_viewer_to_flat(JSONImages { dataURLs: comp_imgs, imgStates: deref_img_states }, zoom).map_err(|e| e.to_string())
+async fn flatten_images(comp_imgs: Vec<String>, deref_img_states: Vec<JSONCompressedImgState>) -> Result<Vec<Vec<u8>>, String> {
+    compressed_viewer_to_flat(JSONImages { dataURLs: comp_imgs, imgStates: deref_img_states }).map_err(|e| e.to_string())
 }
 
 fn main() {
