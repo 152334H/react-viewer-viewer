@@ -222,6 +222,9 @@ const ViewerSession = ({sess,goBack}: {
   }
   const addedButtons = makeButtons(dispatch)
 
+  console.log(flattened);
+  console.log(state);
+
   return (<div className="App">
     <header className="App-header">
       <div style={{float:'right'}}>
@@ -242,7 +245,8 @@ const ViewerSession = ({sess,goBack}: {
         onChange={(e:any) => setName(e.target.value)}
       />
       <h5>zoom level: {window.devicePixelRatio}</h5>
-      <ViewerButtons setShow={setShow} imgs={state.imgs} updateImgs={updateImgs} setFlattened={setFlattened}/>
+      <ViewerButtons setShow={setShow} imgs={state.imgs} updateImgs={updateImgs}
+        setFlattened={(imgs:Images) => {setFlattened(imgs); setFocused(true)}}/>
       {state.show && <ViewerButMoreSimple
         state={(flattened !== null && focused) ? {...state, imgs: flattened} : state} focused={focused}
         setShow={setShow}

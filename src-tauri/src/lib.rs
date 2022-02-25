@@ -206,8 +206,9 @@ where F: Fn(usize,Img) -> AResult<()> + Send + Sync {
             zoom
         }).into()
     }).enumerate().try_for_each(|(i,isr)| -> AResult<()> {
-        //println!("{}: adding to zip", i);
-        callback(i,isr)
+        let res = callback(i,isr);
+        println!("handled image {}", i);
+        res
     })?;
     Ok(())
 }

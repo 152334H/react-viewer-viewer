@@ -158,9 +158,9 @@ const LoadingButton = ({icon, onClick}:
 
 const flattenImages = async (imgs:Images, zoom:number) => {
   const compImgs = await compressImgs(imgs) as ReducedImages; // base64 strings
-  const flattened: Uint8Array[] = await invoke('flatten_images', {
+  const flattened = await invoke('flatten_images', {
     compImgs: compImgs.dataURLs, derefImgStates: compImgs.imgStates, zoom
-  });
+  }).catch(e => window.alert("rust::flatten_images: "+e)) as Uint8Array[];
   return flattened
     .map(d => new Blob([d],{type:'image/png'}))
     .map((b,i) => ({ src: BlobToOURL(b), alt:i,
