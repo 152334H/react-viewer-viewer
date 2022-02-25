@@ -210,27 +210,6 @@ where F: Fn(usize,Img) -> AResult<()> + Send + Sync {
         callback(i,isr)
     })?;
     Ok(())
-    /*
-   let url_count = json.dataURLs.len();
-    let mut to_send: Vec<(usize,Vec<JSONCompressedImgState>)> =
-        (0..url_count).map(|_| Vec::new()).collect();
-    for is in json.imgStates.into_iter() { to_send[is.src].push(is); }
-    //
-    let to_send: Vec<ImgStateRef> = to_send.into_iter().enumerate().flat_map(|(i,is_ls)| {
-        is_ls.into_iter().map({
-            let raw_imgs = &raw_imgs; // I hate this
-            move |comp_is| {
-                ImgStateRef {
-                    img: &raw_imgs[i],
-                    scale: comp_is.scale,
-                    pos: (comp_is.left as i32, comp_is.top as i32),
-                    rotate: comp_is.rotate,
-                    zoom
-                }
-            }
-        })
-    }).collect();
-    */
 }
 
 pub fn compressed_viewer_to_zip(json: JSONImages, zoom: f64) -> AResult<Vec<u8>> {
