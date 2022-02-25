@@ -36,15 +36,10 @@ jobs:
       uses: actions-rs/toolchain@v1
       with:
         toolchain: stable
-    - uses: actions/cache@v2
+    - uses: Swatinem/rust-cache@v1
       with:
-        path: | # TODO: check if we're supposed to use backslashes or forward slashes here.
-          ${{env.USERPROFILE}}\.cargo\bin\
-          ${{env.USERPROFILE}}\.cargo\registry\index\
-          ${{env.USERPROFILE}}\.cargo\registry\cache\
-          ${{env.USERPROFILE}}\.cargo\git\db\
-          src-tauri\target\
-        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+        working-directory: .\src-tauri\
+          #key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
     - uses: tauri-apps/tauri-action@934ddadf57235acdc8de8bfa3d4be97a3d863730
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
