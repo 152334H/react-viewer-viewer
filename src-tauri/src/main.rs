@@ -5,16 +5,14 @@
 
 /* TODO:
  * - use a 2d point struct instead of cluttering the namespace
- * - remove base64 usage
+ * - remove base64 usage <-- probably not possible!
  * - make a git push hook so I don't forget to bump the version number every time?
  * - increase speed more somehow
- * - Figure out how to return a UInt8Array/ArrayBuffer/Blob instead of number[].
- *   see https://github.com/tauri-apps/tauri/pull/3305; we will probably need to update tauri!
  * - separate function to return uncompressed images instead of zip
  */
 
 mod lib;
-use lib::{JSONImages, compressed_viewer_to_zip, deref_viewer_to_zip, JSONCompressedImgState};
+use lib::{JSONImages, compressed_viewer_to_zip, compressed_viewer_to_flat, JSONCompressedImgState};
 use serde::{Serialize, Deserialize};
 #[derive(Serialize, Deserialize)]
 pub struct JSONCompViewerState {
@@ -27,16 +25,10 @@ async fn compile_compressed_images(json: JSONCompViewerState) -> Result<Vec<u8>,
     compressed_viewer_to_zip(json.json_images, json.zoom).map_err(|e| e.to_string())
 }
 
-use lib::JSONImagesU8;
-#[derive(Serialize, Deserialize)]
-pub struct JSONCompViewerStateU8 {
-    pub json_images: JSONImagesU8,
-    pub zoom: f64
-}
 // TODO: test this command so that we can move on with the "send a compressed state" plan
 #[tauri::command]
-async fn flatten_images(raw_imgs: Vec<Vec<u8>>, deref_img_states: Vec<JSONCompressedImgState>, zoom: f64) -> Result<Vec<Vec<u8>>, String> {
-    deref_viewer_to_zip(JSONImagesU8 { dataURLs: raw_imgs, imgStates: deref_img_states }, zoom).map_err(|e| e.to_string())
+async fn flatten_images(comp_imgs: Vec<String>, deref_img_states: Vec<JSONCompressedImgState>, zoom: f64) -> Result<Vec<Vec<u8>>, String> {
+    compressed_viewer_to_flat(JSONImages { dataURLs: comp_imgs, imgStates: deref_img_states }, zoom).map_err(|e| e.to_string())
 }
 
 fn main() {
