@@ -123,7 +123,7 @@ export interface ImagesState {
   activeIndex: number;
 };
 export interface SessionState extends ImagesState {
-  focused: boolean;
+  flattened: null|Images;
   name: string;
 }
 
@@ -203,39 +203,29 @@ const ViewerSession = ({sess,goBack}: {
   sess: SessionState, goBack: (sess:SessionState)=>void
 }) => {
   const [name, setName] = React.useState(sess.name);
-  const [focused, setFocused] = React.useState(sess.focused);
   const [state, dispatch] = React.useReducer(sessReducer, {
     show: sess.show, activeIndex: sess.activeIndex, imgs: sess.imgs
   });
   const [flattened, setFlattened] = React.useState<null|Images>(null);
+  const focused = flattened !== null;
 
-  const updateImgs = flattened === null ? (imgs:Images) => {
-    dispatch({type:'setImgs', val: imgs});
-  } : (imgs:Images) => {
-    setFlattened(imgs); // imgs.length should be immutable in this case.
-  }
-  const setShow = (b: boolean) => {
-    dispatch({type:'setShow', val:b});
-  }
-  const setActiveIndex = (i: number) => {
-    dispatch({type:'setIndex', val:i});
-  }
-  const addedButtons = makeButtons(dispatch)
-
-  console.log(flattened);
-  console.log(state);
-
+  const updateImgs = focused ? (imgs:Images) => setFlattened(imgs)  // imgs.length should be immutable in this case.
+    : (imgs:Images) => dispatch({type:'setImgs', val: imgs});
+  const setShow = (b: boolean) => dispatch({type:'setShow', val:b});
+  const setActiveIndex = (i: number) => dispatch({type:'setIndex', val:i});
+  const addedButtons = makeButtons(dispatch);
+  // TODO: instead of a flatten button & focus switch, just make the switch generate the flattened state.
   return (<div className="App">
     <header className="App-header">
       <div style={{float:'right'}}>
         <IconButtonSimple icon={<KeyboardReturn/>}
-        onClick={()=>goBack({...state, focused, name})}/>
+        onClick={()=>goBack({...state, flattened, name})}/>
       </div>
       <div style={{clear: 'both', float:'right'}}>
         <FormControlLabel label="Focused" control={
-          <Switch checked={focused} disabled={flattened===null} onChange={(e) => {
-            if (!e.target.checked) setFlattened(null); // purge flattened images if changes are needed
-            setFocused(e.target.checked);
+          <Switch checked={focused} disabled={focused} onChange={(e) => {
+            if (e.target.checked) { window.alert("Something went wrong in focus switch!") }
+            else { setFlattened(null); } // purge flattened images when changes are needed
           }}/>
         }/>
       </div>
@@ -246,9 +236,9 @@ const ViewerSession = ({sess,goBack}: {
       />
       <h5>zoom level: {window.devicePixelRatio}</h5>
       <ViewerButtons setShow={setShow} imgs={state.imgs} updateImgs={updateImgs}
-        setFlattened={(imgs:Images) => {setFlattened(imgs); setFocused(true)}}/>
+        setFlattened={setFlattened}/>
       {state.show && <ViewerButMoreSimple
-        state={(flattened !== null && focused) ? {...state, imgs: flattened} : state} focused={focused}
+        state={(focused) ? {...state, imgs: flattened} : state} focused={focused}
         setShow={setShow}
         addedButtons={addedButtons}
         setActiveIndex={setActiveIndex}

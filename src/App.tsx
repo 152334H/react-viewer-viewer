@@ -11,6 +11,7 @@
    * Finally implement the no-toolbar mode we originally planned. Will be possible (not incredibly slow) since image flattening from tauri is possible.
    * fix typing
    * figure out how to accomodate for different zoom values across devices
+   * implement more hotkeys
 */
 
 import * as React from 'react';
@@ -53,8 +54,8 @@ const MainMenu = ({sessions,select}: {
   </List></div>}
 </>)
 
-const sessionFromImages = (imgs: Images) => ({
-  imgs, focused: false, show: false,
+const sessionFromImages = (imgs: Images): SessionState => ({
+  imgs, flattened: null, show: false,
   name: `session-${Date.now()}`, activeIndex: 0
 });
 
@@ -67,10 +68,8 @@ async function loadSessionsSilent() {
   if (compSessions === null) return [];
   let sessions = await Promise.all(compSessions.map(async (sess) => {
     const imgs = await uncompressImgs(sess.reduced, false);
-    return {imgs, focused: sess.focused,
-      show: sess.show, name: sess.name,
-      activeIndex: sess.activeIndex
-    }; // cannot use ...sess here because we want to throw out the .reduced attribute
+    const {reduced, ...rest} = sess;
+    return {imgs, ...rest};
   }));
   return sessions;
 }
