@@ -159,7 +159,7 @@ const LoadingButton = ({icon, onClick}:
 const flattenImages = async (imgs:Images, zoom:number) => {
   const compImgs = await compressImgs(imgs) as ReducedImages; // base64 strings
   const flattened: Uint8Array[] = await invoke('flatten_images', {
-    rawImgs: compImgs.dataURLs, derefImgStates: compImgs.imgStates, zoom
+    compImgs: compImgs.dataURLs, derefImgStates: compImgs.imgStates, zoom
   });
   return flattened
     .map(d => new Blob([d],{type:'image/png'}))
