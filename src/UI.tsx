@@ -21,10 +21,10 @@ export const UploadButton = ({id, icon, onChange}:
     <Input type='file'
       id={id} style={{display: "none"}}
       inputProps={{ multiple: true }}
-      onChange={onChange}/>
+      onChange={onChange} value=''/>
     <IconButtonSimple icon={icon}/>
   </label>
-)
+) // value='' allows the input to accept the same file twice in a row
 
 export const notifyPromise = (p: Promise<any>, msg: string) => toast.promise(p, {
   pending: msg,
