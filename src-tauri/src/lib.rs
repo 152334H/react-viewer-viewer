@@ -240,7 +240,7 @@ pub fn compressed_viewer_to_flat(json: JSONImages) -> AResult<Vec<Vec<u8>>> {
         res_ref[i] = Some(buf);
         Ok(())
     })?;
-    //
+    // final unwrap is safe because for_each_image succeeded
     Ok(res.into_iter().map(|x| x.unwrap()).collect())
 }
 

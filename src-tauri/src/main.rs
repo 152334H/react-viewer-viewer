@@ -8,6 +8,7 @@
  * - remove base64 usage <-- probably not possible!
  * - make a git push hook so I don't forget to bump the version number every time?
  * - increase speed more somehow
+ * - also, compilation speed
  * - separate function to return uncompressed images instead of zip
  */
 

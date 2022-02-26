@@ -1,7 +1,8 @@
 /* Just a simple extension of react-viewer into a native app.
  * With a few added bells and whistles like:
- * - additional toolbar buttons
+ * - additional viewer features, like added toolbar buttons
  * - 'pickle'ing the state of the image viewer for future use
+ * - saving and restoring the state of various image viewer sessions
  */
 
 /* TODO:
@@ -11,7 +12,6 @@
    * Finally implement the no-toolbar mode we originally planned. Will be possible (not incredibly slow) since image flattening from tauri is possible.
    * fix typing
    * figure out how to accomodate for different zoom values across devices
-   * implement more hotkeys
 */
 
 import * as React from 'react';
@@ -138,7 +138,7 @@ const App = () => (<>
   <ToastContainer position="top-right"
     autoClose={1000}
     hideProgressBar
-    closeOnClick={false}
+    closeOnClick={true}
     draggable={false}
     pauseOnFocusLoss={false}
   />
