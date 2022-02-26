@@ -23,7 +23,7 @@ interface ToolbarConfig { // private from react-viewer/ViewerProps
     key: string;
     actionType?: number;
     render?: React.ReactNode;
-    onClick?: (activeIm: FullImageState) => void;
+    onClick?: (activeIm?: FullImageState) => void;
 }
 //const logAndRet = (v:any) => {console.log(v); return v}
 
@@ -97,11 +97,18 @@ type SimpleViewerProps = {
       activeIndex: number;
     };
     focused: boolean;
-    addedButtons: any[] // note: this is really ToolbarConfig[], but...
+    addedButtons: any[];// note: this is really ToolbarConfig[], but...
+    handleKeyPress: (e: any) => void;
 };
 // the main component from react-viewer. default options written here
 // TODO: fix bug where clicking on image previews in the footer will not save the state of the image the viewer is leaving. Also, check if the rotation bug still exists.
-const ViewerButMoreSimple: FC<SimpleViewerProps> = ({setShow, setActiveIndex, addedButtons, state, focused}) => {
+const ViewerButMoreSimple: FC<SimpleViewerProps> = ({setShow, setActiveIndex, addedButtons, state, focused, handleKeyPress}) => {
+  React.useEffect(() => {
+    document.addEventListener('keydown', handleKeyPress);
+    return () => {
+      document.removeEventListener('keydown', handleKeyPress);
+    }
+  }, [handleKeyPress]);
   return (<Viewer visible={true}
     noFooter={focused}
     noClose={focused}
@@ -227,6 +234,23 @@ const ViewerSession = ({sess,goBack}: {
     notifyPromise(p, 'Flattening images...');
     return p;
   }
+  const handleKeyPress = React.useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (focused) { return; } // don't do anything in the focused state (imgs are flattened)
+    // TODO: cribbing on addedButtons[] is really stupid
+    if (e.key === 'p') {
+      addedButtons[0].onClick();
+    } else if (e.key === 'd') {
+      addedButtons[1].onClick(state.imgs[state.activeIndex]);
+    } else if (e.key === '[') {
+      addedButtons[2].onClick(state.imgs[state.activeIndex]);
+    } else if (e.key === ']') {
+      addedButtons[3].onClick(state.imgs[state.activeIndex]);
+    } else if (e.key === '0') {
+      setActiveIndex(0);
+    } else if (e.key === '$') {
+      setActiveIndex(state.imgs.length-1);
+    }
+  }, [addedButtons, state, focused]);
 
   return (<div className="App">
     <header className="App-header">
@@ -257,6 +281,7 @@ const ViewerSession = ({sess,goBack}: {
         setShow={setShow}
         addedButtons={addedButtons}
         setActiveIndex={setActiveIndex}
+        handleKeyPress={handleKeyPress}
       />}
     </header>
   </div>)
