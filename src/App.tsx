@@ -69,7 +69,7 @@ async function loadSessionsSilent() {
   let sessions = await Promise.all(compSessions.map(async (sess) => {
     const imgs = await uncompressImgs(sess.reduced, false);
     const {reduced, ...rest} = sess;
-    return {imgs, ...rest};
+    return {...rest, imgs};
   }));
   return sessions;
 }
@@ -89,6 +89,7 @@ function saveSessions(sessions: SessionState[]) {
   return p
 }
 
+// TODO: add button to export/load sessions
 const RealApp = () => {
   const [menu,setMenu] = React.useState('main');
   const [vind,setVind] = React.useState(null);
