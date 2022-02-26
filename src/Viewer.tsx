@@ -207,8 +207,8 @@ const ViewerSession = ({sess,goBack}: {
   const [state, dispatch] = React.useReducer(sessReducer, {
     show: sess.show, activeIndex: sess.activeIndex, imgs: sess.imgs
   });
-  const [flattened, setFlattened] = React.useState<null|Images>(null);
-  const [focusLocked, setFocusLocked] = React.useState(false);
+  const [flattened, setFlattened] = React.useState<null|Images>(sess.flattened);
+  const [focusLocked, setFocusLocked] = React.useState(sess.flattened === null && sess.imgs === []);
   const focused = flattened !== null;
 
   const updateImgs = focused ? (imgs:Images) => setFlattened(imgs)  // imgs.length should be immutable in this case.
