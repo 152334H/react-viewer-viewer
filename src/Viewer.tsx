@@ -221,7 +221,6 @@ const ViewerSession = ({sess,goBack}: {
   if (state.show === false && manualUpdate !== 0) { setManualUpdate(0); }
   const focused = flattened !== null;
 
-  const forceActiveImageUpdate = () => { setManualUpdate(manualUpdate+1); }
   const updateImgs = focused ? (imgs:Images) => setFlattened(imgs)  // imgs.length should be immutable in this case.
     : (imgs:Images) => dispatch({type:'setImgs', val: imgs});
   const setShow = (b: boolean) => dispatch({type:'setShow', val:b});
@@ -242,7 +241,7 @@ const ViewerSession = ({sess,goBack}: {
     if (focused) { return; } // don't do anything in the focused state (imgs are flattened)
     // TODO: cribbing on addedButtons[] is really stupid
     if (['p','d','[',']','0','$'].includes(e.key)) {
-      forceActiveImageUpdate();
+      setManualUpdate(manualUpdate+1);
     }
     if (e.key === 'p') {
       addedButtons[0].onClick();
@@ -257,7 +256,7 @@ const ViewerSession = ({sess,goBack}: {
     } else if (e.key === '$') {
       setActiveIndex(state.imgs.length-1);
     }
-  }, [addedButtons, state, focused]);
+  }, [addedButtons, state, focused, manualUpdate]);
 
   return (<div className="App">
     <header className="App-header">
