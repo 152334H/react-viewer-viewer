@@ -59,17 +59,19 @@ const sessionFromImages = (imgs: Images): SessionState => ({
   name: `session-${Date.now()}`, activeIndex: 0
 });
 
-interface StoredSession extends Omit<SessionState,'imgs'> {
-  reduced: ReducedImages
+interface StoredSession extends Omit<SessionState,'imgs' | 'flattened'> {
+  imgs_r: ReducedImages;
+  flattened_r: ReducedImages;
 }
 
 async function loadSessionsSilent() {
   let compSessions: StoredSession[] = await LF.getItem('sessions');
   if (compSessions === null) return [];
   let sessions = await Promise.all(compSessions.map(async (sess) => {
-    const imgs = await uncompressImgs(sess.reduced, false);
-    const {reduced, ...rest} = sess;
-    return {...rest, imgs};
+    const imgs = await uncompressImgs(sess.imgs_r, false);
+    const flattened = await uncompressImgs(sess.flattened_r, false);
+    const {imgs_r, flattened_r, ...rest} = sess;
+    return {...rest, imgs, flattened};
   }));
   return sessions;
 }
@@ -81,10 +83,11 @@ function loadSessions() {
 }
 
 function saveSessions(sessions: SessionState[]) {
-  const p = Promise.all(sessions.map(s =>
-    compressImgs(s.imgs, false).then(imgs => (
-      {...s, reduced: imgs}
-  )))).then(sessions => LF.setItem('sessions', sessions));
+  const p = Promise.all(sessions.map(async (s) => {
+    const imgs_r = await compressImgs(s.imgs, false);
+    const flattened_r = await compressImgs(s.flattened, false); // this is slightly inefficient, but minor
+    return {...s, imgs_r, flattened_r};
+  })).then(sessions => LF.setItem('sessions', sessions));
   notifyPromise(p, 'saving sessions...');
   return p
 }
