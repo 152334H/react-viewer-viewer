@@ -281,7 +281,7 @@ const ViewerSession = ({sess,goBack}: {
       />
       <h5>zoom level: {window.devicePixelRatio}</h5>
       <ViewerButtons setShow={setShow} imgs={state.imgs} updateImgs={updateImgs}
-        setFlattened={setFlattened}/>
+        setFlattened={setFlattened} setActiveIndex={setActiveIndex}/>
       {state.show && <ViewerButMoreSimple
         state={(focused) ? {...state, imgs: flattened} : state} focused={focused}
         setShow={setShow}

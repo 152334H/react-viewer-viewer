@@ -198,11 +198,16 @@ interface VBProps {
   imgs: Images;
   updateImgs: (imgs:Images) => void;
   setFlattened: (flat: null|Images) => void;
+  setActiveIndex: (i:number) => void;
 }
 
 export const ViewerButtons: FC<VBProps> = (
-  {setShow,imgs,updateImgs,setFlattened}
+  {setShow,imgs,updateImgs,setFlattened,setActiveIndex}
   ) => {
+  const replaceImgs = (newImgs:Images) => {
+    if (imgs.length !== 0) { setActiveIndex(0); }
+    updateImgs(newImgs);
+  }
   return (<>
     <Uploader addImgs={(ls:string[]) => updateImgs(imgs
       .concat(ls.map((url,ind) => ({
@@ -210,7 +215,7 @@ export const ViewerButtons: FC<VBProps> = (
           scale: 1, left: 0, top: 0, rotate: 0
       })))
     )}/>
-    <UploadAll setImgs={updateImgs}/>
+    <UploadAll setImgs={replaceImgs}/>
     {imgs.length>0 && (()=>(<>
       <IconButtonSimple icon={<Collections/>}
         onClick={() => setShow(true)}/>
@@ -219,4 +224,3 @@ export const ViewerButtons: FC<VBProps> = (
     </>))()}
   </>);
 }
-
