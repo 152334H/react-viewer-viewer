@@ -99,10 +99,10 @@ type SimpleViewerProps = {
     focused: boolean;
     addedButtons: any[];// note: this is really ToolbarConfig[], but...
     handleKeyPress: (e: any) => void;
+    manualUpdate: number;
 };
 // the main component from react-viewer. default options written here
-// TODO: fix bug where clicking on image previews in the footer will not save the state of the image the viewer is leaving. Also, check if the rotation bug still exists.
-const ViewerButMoreSimple: FC<SimpleViewerProps> = ({setShow, setActiveIndex, addedButtons, state, focused, handleKeyPress}) => {
+const ViewerButMoreSimple: FC<SimpleViewerProps> = ({setShow, setActiveIndex, addedButtons, state, focused, handleKeyPress, manualUpdate}) => {
   React.useEffect(() => {
     document.addEventListener('keydown', handleKeyPress);
     return () => {
@@ -119,9 +119,10 @@ const ViewerButMoreSimple: FC<SimpleViewerProps> = ({setShow, setActiveIndex, ad
     maxScale={500}
     onClose={() => setShow(false)}
     images={state.imgs}
-    customToolbar={ls => ls.concat(addedButtons)}
-    onIndexChange={setActiveIndex}
+    customToolbar={(ls:any[]) => ls.concat(addedButtons)}
+    onChange={(_:any,i:number) => setActiveIndex(i)}
     activeIndex={state.activeIndex}
+    triggerUpdate={manualUpdate}
   />)
 }
 
@@ -216,8 +217,11 @@ const ViewerSession = ({sess,goBack}: {
   });
   const [flattened, setFlattened] = React.useState<null|Images>(sess.flattened);
   const [focusLocked, setFocusLocked] = React.useState(sess.flattened === null && sess.imgs === []);
+  const [manualUpdate, setManualUpdate] = React.useState(0);
+  if (state.show === false && manualUpdate !== 0) { setManualUpdate(0); }
   const focused = flattened !== null;
 
+  const forceActiveImageUpdate = () => { setManualUpdate(manualUpdate+1); }
   const updateImgs = focused ? (imgs:Images) => setFlattened(imgs)  // imgs.length should be immutable in this case.
     : (imgs:Images) => dispatch({type:'setImgs', val: imgs});
   const setShow = (b: boolean) => dispatch({type:'setShow', val:b});
@@ -237,6 +241,9 @@ const ViewerSession = ({sess,goBack}: {
   const handleKeyPress = React.useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
     if (focused) { return; } // don't do anything in the focused state (imgs are flattened)
     // TODO: cribbing on addedButtons[] is really stupid
+    if (['p','d','[',']','0','$'].includes(e.key)) {
+      forceActiveImageUpdate();
+    }
     if (e.key === 'p') {
       addedButtons[0].onClick();
     } else if (e.key === 'd') {
@@ -282,6 +289,7 @@ const ViewerSession = ({sess,goBack}: {
         addedButtons={addedButtons}
         setActiveIndex={setActiveIndex}
         handleKeyPress={handleKeyPress}
+        manualUpdate={manualUpdate}
       />}
     </header>
   </div>)
