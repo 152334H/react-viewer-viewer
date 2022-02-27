@@ -199,7 +199,7 @@ function sessReducer(s: ImagesState, a: ImagesStateCmd): ImagesState {
       if (aI >= imgs.length) {
         window.alert('setImgs: activeIndex out of bounds; shrinking');
         aI = imgs.length ? imgs.length-1 : 0;
-        // TODO:this will not actually work because of the same bug that affects shift_image_*. Upstream...
+        // Note: if the viewer is *visible* while this happens, an undefined access could still occur.
       }
       return {...s, imgs, activeIndex: aI, show: imgs.length !== 0};
     }
