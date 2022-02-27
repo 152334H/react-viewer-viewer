@@ -6,10 +6,9 @@
  */
 
 /* TODO:
-   * fix res => res.blob()
+   * fix res => res.blob() <-- chromium issue. Very unlikely to be resolved.
    * draggable preview of images (to reorganise)
    * Drag and drop for file upload?
-   * Finally implement the no-toolbar mode we originally planned. Will be possible (not incredibly slow) since image flattening from tauri is possible.
    * fix typing
    * figure out how to accomodate for different zoom values across devices
 */
