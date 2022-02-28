@@ -1,52 +1,17 @@
 import * as React from 'react'
-import {FC,ReactElement} from 'react'
+import {FC} from 'react'
 // MUI imports
-import IconButton from '@mui/material/Button';
 import {PhotoCamera, Download, Upload, Collections, Archive} from '@mui/icons-material';
-import Box from '@mui/material/Box';
-import CircularProgress from '@mui/material/CircularProgress';
-import {green,red} from '@mui/material/colors';
 
 import {invoke} from '@tauri-apps/api/tauri'
 import {saveAs} from 'file-saver'
 
-import {IconButtonSimple,UploadButton,isTauri} from './UI'
+import {IconButtonSimple,UploadButton,isTauri,LoadingButton} from './UI'
+import {Images,ReducedImages} from './ImageState'
+import {compressImgs,uncompressImgs} from './ImageState'
+import {BlobToOURL,blobToText} from './ImageState'
 
-interface ImageMeta {
-    alt: number
-    scale: number
-    left: number
-    top: number
-    rotate: number
-}
-interface DerefImageState extends ImageMeta {
-    src: number // index for dataURLs[]
-};
-interface FullImageState extends ImageMeta{
-    src: string // ! this is a blob objectURL!
-};
-
-type Images = FullImageState[];
-type ReducedImages = {
-    dataURLs: string[]; // this is an ObjectURL!
-    imgStates: DerefImageState[];
-}; 
-
-export {Images, FullImageState, ReducedImages};
-
-const readerProducer = (meth: (r:FileReader)=>any) => (
- (blob:any) => new Promise((resolve) => {
-    const reader = new FileReader()
-    reader.onloadend = () => resolve(reader.result)
-    meth(reader).bind(reader)(blob)
-  })
-)
-
-const URLToBlob = (url:string) => fetch(url).then(res => res.blob());
-const BlobToOURL = (blob:Blob) => URL.createObjectURL(blob);
-const blobToB64 = (blob:Blob) => readerProducer(r => r.readAsDataURL)(blob);
-
-// button 1: upload images from local filesystem
+// button 1: upload images from local fs
 const Uploader = ({addImgs}: {addImgs: (urls:string[])=>void}) => {
   const onChange = (e:any) => // run addImg on all images uploaded
     Promise.all(Array.from(e.target.files)
@@ -58,10 +23,8 @@ const Uploader = ({addImgs}: {addImgs: (urls:string[])=>void}) => {
     icon={<PhotoCamera />} onChange={onChange}/>
 }
 
-// button 2: load image viewer from pickled state
+// button 2: load viewerstate from json file
 const UploadAll = ({setImgs}: {setImgs:(imgs:Images)=>void}) => {
-  const blobToText = readerProducer(r => r.readAsText)
-
   const onChange = (e:any) => blobToText(e.target.files[0]).then((json: string) => {
     let obj: ReducedImages = JSON.parse(json);
     uncompressImgs(obj).then(setImgs);
@@ -69,32 +32,6 @@ const UploadAll = ({setImgs}: {setImgs:(imgs:Images)=>void}) => {
 
   return <UploadButton id="icon-button-file-all"
     icon={<Upload/>} onChange={onChange}/>
-}
-
-// TODO: refactor this (get rid of the b64 thing)
-export const compressImgs = (imgs:Images, b64:boolean=true) => {
-  let objURLs: string[] = [];
-  let imgStates = imgs.map(i => {
-    // this part is fast enough because we're using blob objectURLs (and not full base64 urls)
-    let ind = objURLs.findIndex(d => d === i.src)
-    if (ind === -1) {
-      objURLs.push(i.src)
-      ind = objURLs.length - 1
-    }
-    return {...i, src: ind}
-  });
-  return Promise.all(objURLs.map(
-      objURL => URLToBlob(objURL).then(b64 ? blobToB64 : b=>b)
-  )).then((dataURLs: (string|Blob)[]) => ({dataURLs, imgStates}))
-}
-
-// TODO: wrong typing due to b64 thing
-export const uncompressImgs = (compImgs:ReducedImages, b64:boolean=true) => {
-  return Promise.all(compImgs.dataURLs.map(
-     objURL => (b64 ? URLToBlob(objURL) : new Promise(r=>r(objURL))).then(BlobToOURL)
-  )).then(urls => compImgs.imgStates.map(im => (
-      {...im, src: urls[im.src]}
-  )));
 }
 
 // button 3: save image viewer state to pickle (image-$timestamp.json)
@@ -109,60 +46,12 @@ const SaveAll = ({imgs}: {imgs:Images}) => {
   return <IconButtonSimple icon={<Download/>} onClick={saveAll}/>
 }
 
-const LoadingButton = ({icon, onClick}:
-  {icon: ReactElement, onClick: () => Promise<void>}
-  ) => {
-  const [loading, setLoading] = React.useState(false);
-  const [success, setSuccess] = React.useState(null);
-
-  const buttonSx = {
-    ...(success!==null && ( success ? {
-      bgcolor: green[500],
-      '&:hover': { bgcolor: green[700], },
-    } : {
-      bgcolor: red[500],
-      '&:hover': { bgcolor: red[700], },
-    })),
-  };
-
-  const handleButtonClick = () => {
-    if (!loading) {
-      setSuccess(null); setLoading(true);
-      onClick().then(() => setSuccess(true)
-      ).catch(() => setSuccess(false)
-      ).finally(() => setLoading(false));
-    }
-  };
-  // have no idea how this works, copied from MUI examples
-  return (<Box sx={{ display: 'flex', alignItems: 'center' }}>
-    <Box sx={{ m: 1, position: 'relative' }}>
-      <IconButton sx={buttonSx} variant="contained" disabled={loading} onClick={handleButtonClick}>
-        {icon}
-      </IconButton>
-      {loading && (
-        <CircularProgress
-          size={24}
-          sx={{
-            color: green[500],
-            position: 'absolute',
-            top: '50%',
-            left: '50%',
-            marginTop: '-12px',
-            marginLeft: '-12px',
-          }}
-        />
-      )}
-    </Box>
-  </Box>);
-}
-
 export const flattenImages = async (imgs:Images) => {
   const compImgs = await compressImgs(imgs) as ReducedImages; // base64 strings
   const flattened = await invoke('flatten_images', {
     compImgs: compImgs.dataURLs, derefImgStates: compImgs.imgStates
   }).catch(e => window.alert("rust::flatten_images: "+e)) as any[];
   // TODO: figure out how to make the serialisation send/return Uint8Array, not number[]
-  //console.log(flattened); 
   return flattened
     .map((arr: number[]) => new Uint8Array(arr))
     .map(d => new Blob([d],{type:'image/png'}))

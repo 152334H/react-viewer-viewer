@@ -28,7 +28,7 @@ import LF from 'localforage';
 import {ToastContainer} from 'react-toastify';
 
 import ViewerSession,{SessionState} from './Viewer'
-import {Images,compressImgs,uncompressImgs,ReducedImages} from './ViewerButtons'
+import {Images,compressImgs,uncompressImgs,ReducedImages} from './ImageState'
 import {IconButtonSimple,notifyPromise} from './UI'
 
 const MainMenu = ({sessions,select}: {

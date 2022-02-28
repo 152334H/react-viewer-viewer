@@ -14,10 +14,8 @@ import Viewer from 'react-viewer'
 
 import {IconButtonSimple,notifyPromise,isTauri} from './UI'
 import {ViewerButtons} from './ViewerButtons'
-
-// TODO:move these types somewhere more sensible
-import {Images,FullImageState} from './ViewerButtons'
 import {flattenImages} from './ViewerButtons'
+import {Images,FullImageState} from './ImageState'
 
 interface ToolbarConfig { // private from react-viewer/ViewerProps
     key: string;
