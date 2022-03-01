@@ -28,7 +28,7 @@ import LF from 'localforage';
 import {ToastContainer} from 'react-toastify';
 
 import ViewerSession,{SessionState} from './Viewer'
-import {Images,compressImgs,uncompressImgs,ReducedImages} from './ImageState'
+import {Images,ReducedImages} from './ImageState'
 import {IconButtonSimple,notifyPromise} from './UI'
 
 const MainMenu = ({sessions,select}: {
@@ -60,15 +60,15 @@ const sessionFromImages = (imgs: Images): SessionState => ({
 
 interface StoredSession extends Omit<SessionState,'imgs' | 'flattened'> {
   imgs_r: ReducedImages;
-  flattened_r: ReducedImages;
+  flattened_r: ReducedImages | null;
 }
 
 async function loadSessionsSilent() {
   let compSessions: StoredSession[] = await LF.getItem('sessions');
   if (compSessions === null) return [];
   let sessions = await Promise.all(compSessions.map(async (sess) => {
-    const imgs = await uncompressImgs(sess.imgs_r, false);
-    const flattened = await uncompressImgs(sess.flattened_r, false);
+    const imgs = await ReducedImages.fromObj(sess.imgs_r).intoImgs();
+    const flattened = sess.flattened_r ? await ReducedImages.fromObj(sess.flattened_r).intoImgs() : null;
     const {imgs_r, flattened_r, ...rest} = sess;
     return {...rest, imgs, flattened};
   }));
@@ -83,8 +83,8 @@ function loadSessions() {
 
 function saveSessions(sessions: SessionState[]) {
   const p = Promise.all(sessions.map(async (s) => {
-    const imgs_r = await compressImgs(s.imgs, false);
-    const flattened_r = await compressImgs(s.flattened, false); // this is slightly inefficient, but minor
+    const imgs_r = await new ReducedImages(s.imgs).intoBlobs();
+    const flattened_r = s.flattened ? await new ReducedImages(s.flattened).intoBlobs() : null; // slightly inefficient
     return {...s, imgs_r, flattened_r};
   })).then(sessions => LF.setItem('sessions', sessions));
   notifyPromise(p, 'saving sessions...');

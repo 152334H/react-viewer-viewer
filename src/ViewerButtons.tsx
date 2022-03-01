@@ -8,15 +8,14 @@ import {saveAs} from 'file-saver'
 
 import {IconButtonSimple,UploadButton,isTauri,LoadingButton} from './UI'
 import {Images,ReducedImages} from './ImageState'
-import {compressImgs,uncompressImgs} from './ImageState'
-import {BlobToOURL,blobToText} from './ImageState'
+import {blobToOURL,blobToText} from './ImageState'
 
 // button 1: upload images from local fs
 const Uploader = ({addImgs}: {addImgs: (urls:string[])=>void}) => {
   const onChange = (e:any) => // run addImg on all images uploaded
     Promise.all(Array.from(e.target.files)
       .filter((f:File) => f.type.match('image.*'))
-      .map(BlobToOURL)
+      .map(blobToOURL)
     ).then(addImgs)
 
   return <UploadButton id="icon-button-file"
@@ -26,8 +25,8 @@ const Uploader = ({addImgs}: {addImgs: (urls:string[])=>void}) => {
 // button 2: load viewerstate from json file
 const UploadAll = ({setImgs}: {setImgs:(imgs:Images)=>void}) => {
   const onChange = (e:any) => blobToText(e.target.files[0]).then((json: string) => {
-    let obj: ReducedImages = JSON.parse(json);
-    uncompressImgs(obj).then(setImgs);
+    const obj = ReducedImages.fromObj(JSON.parse(json))
+    obj.intoImgs().then(setImgs);
   })
 
   return <UploadButton id="icon-button-file-all"
@@ -37,7 +36,7 @@ const UploadAll = ({setImgs}: {setImgs:(imgs:Images)=>void}) => {
 // button 3: save image viewer state to pickle (image-$timestamp.json)
 const SaveAll = ({imgs}: {imgs:Images}) => {
   const saveAll = () => {
-    compressImgs(imgs).then(compImgs => 
+    new ReducedImages(imgs).intoB64().then(compImgs => 
       saveAs(new Blob([JSON.stringify(compImgs)],
         {type: "text/json;charset=utf-8"}),
         `images-${Date.now()}.json`)
@@ -47,7 +46,7 @@ const SaveAll = ({imgs}: {imgs:Images}) => {
 }
 
 export const flattenImages = async (imgs:Images) => {
-  const compImgs = await compressImgs(imgs) as ReducedImages; // base64 strings
+  const compImgs = await new ReducedImages(imgs).intoB64();
   const flattened = await invoke('flatten_images', {
     compImgs: compImgs.dataURLs, derefImgStates: compImgs.imgStates
   }).catch(e => window.alert("rust::flatten_images: "+e)) as any[];
@@ -55,7 +54,7 @@ export const flattenImages = async (imgs:Images) => {
   return flattened
     .map((arr: number[]) => new Uint8Array(arr))
     .map(d => new Blob([d],{type:'image/png'}))
-    .map((b,i) => ({ src: BlobToOURL(b), alt:i,
+    .map((b,i) => ({ src: blobToOURL(b), alt:i,
          scale: 1, left: 0, top: 0, rotate: 0
     }));
 }
@@ -66,10 +65,10 @@ const CompileButton = ({imgs}: {imgs:Images}) => {
     return <></>;
   return <LoadingButton icon={<Archive/>} onClick={() => {
     // this will be really slow!
-    return compressImgs(imgs).then(compImgs =>
-      invoke('compile_compressed_images', {json:
-        //{imgStates: imgs, zoom: window.devicePixelRatio}
-        {json_images: compImgs, zoom: window.devicePixelRatio}
+    return new ReducedImages(imgs).intoB64().then(compImgs => {
+      const {datatype, ...jsonImages} = compImgs;
+      return invoke('compile_compressed_images', {json:
+        {json_images: jsonImages, zoom: window.devicePixelRatio}
       }).then((res: number[]) => {
         let byteArray = new Uint8Array(res);
         saveAs(new Blob([byteArray], {type: "application/zip"}),
@@ -78,7 +77,7 @@ const CompileButton = ({imgs}: {imgs:Images}) => {
         window.alert(`something went wrong in tauri command "compile_compressed_images": ${e}`);
         throw new Error('invoke error')
       })
-    )
+    })
   }}/>
 }
 
