@@ -59,26 +59,34 @@ export const flattenImages = async (imgs:Images) => {
     }));
 }
 
+const zipImages = async (imgs:Images) => {
+  // this will be really slow!
+  const reduced = await new ReducedImages(imgs).intoB64();
+  const {datatype, ...jsonImages} = reduced;
+  try {
+    const zip_bytes: number[] = await invoke(
+      'compile_compressed_images', {
+        zoom: window.devicePixelRatio,
+        jsonImages,
+      }
+    );
+    const bArr = new Uint8Array(zip_bytes);
+    return new Blob([bArr], {type: 'application/zip'});
+  } catch (e) {
+    window.alert(`something went wrong in tauri command "compile_compressed_images": ${e}`);
+    throw new Error('invoke error')
+  }
+}
+
 // button 4: save image viewer state to a bunch of images in a zip
 const CompileButton = ({imgs}: {imgs:Images}) => {
   if (!isTauri())
     return <></>;
-  return <LoadingButton icon={<Archive/>} onClick={() => {
-    // this will be really slow!
-    return new ReducedImages(imgs).intoB64().then(compImgs => {
-      const {datatype, ...jsonImages} = compImgs;
-      return invoke('compile_compressed_images', {json:
-        {json_images: jsonImages, zoom: window.devicePixelRatio}
-      }).then((res: number[]) => {
-        let byteArray = new Uint8Array(res);
-        saveAs(new Blob([byteArray], {type: "application/zip"}),
-      `images-${Date.now()}.zip`)
-      }).catch(e => {
-        window.alert(`something went wrong in tauri command "compile_compressed_images": ${e}`);
-        throw new Error('invoke error')
-      })
-    })
-  }}/>
+  return <LoadingButton icon={<Archive/>}
+    onClick={
+      () => zipImages(imgs).then(b =>
+        saveAs(b, `images-${Date.now()}.zip`)
+    )}/>
 }
 
 interface VBProps {
