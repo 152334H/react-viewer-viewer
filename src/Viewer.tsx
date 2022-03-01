@@ -1,6 +1,5 @@
 /* This is the page for a single image viewer sewssion.
 */
-
 import * as React from 'react'
 import {FC} from 'react'
 // MUI imports
@@ -8,10 +7,8 @@ import {KeyboardReturn} from '@mui/icons-material';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import Switch from '@mui/material/Switch';
 import InputBase from '@mui/material/InputBase';
-// other imports
 // imports developed / edited for project
 import Viewer from 'react-viewer'
-
 import {IconButtonSimple,notifyPromise,isTauri} from './UI'
 import {ViewerButtons} from './ViewerButtons'
 import {flattenImages} from './ViewerButtons'

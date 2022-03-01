@@ -14,7 +14,7 @@
 */
 
 import * as React from 'react';
-
+// Material UI
 import {createTheme, ThemeProvider} from '@mui/material/styles'
 import CssBaseline from '@mui/material/CssBaseline';
 import List from '@mui/material/List';
@@ -23,10 +23,10 @@ import ListItemText from '@mui/material/ListItemText';
 import ListItemButton from '@mui/material/ListItemButton';
 import Add from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
-
+// other imports
 import LF from 'localforage';
 import {ToastContainer} from 'react-toastify';
-
+// locally developed
 import ViewerSession,{SessionState} from './Viewer'
 import {Images,ReducedImages} from './ImageState'
 import {IconButtonSimple,notifyPromise} from './UI'
