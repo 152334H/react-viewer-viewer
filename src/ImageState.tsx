@@ -1,4 +1,23 @@
-// types/interfaces/classes for individual image states
+/* FileReader utils */
+const readerProducer = (
+  meth: (r:FileReader) => (
+     (_: any, blob:any) => void
+  )
+) => (
+ (blob:any) => new Promise((resolve) => {
+    const reader = new FileReader()
+    reader.onloadend = () => resolve(reader.result as string)
+    meth(reader).bind(reader)(blob)
+  })
+)
+
+const URLToBlob = (url:imURL) => fetch(url).then(res => res.blob());
+export const blobToOURL = (blob:Blob) => URL.createObjectURL(blob);
+const blobToB64 = readerProducer(r => r.readAsDataURL) as (b:Blob) => Promise<string>;
+export const blobToText = readerProducer(r => r.readAsText) as (b:Blob) => Promise<string>;
+
+
+/* types/interfaces/classes for individual image states */
 type imURL = string; // blob url
 
 interface ImageMeta {
@@ -98,23 +117,6 @@ class ReducedImages {
   }
 }
 
-const readerProducer = (
-  meth: (r:FileReader) => (
-     (_: any, blob:any) => void
-  )
-) => (
- (blob:any) => new Promise((resolve) => {
-    const reader = new FileReader()
-    reader.onloadend = () => resolve(reader.result as string)
-    meth(reader).bind(reader)(blob)
-  })
-)
-
 // exported types:
 export {Images,FullImageState,ReducedImages,DerefImageState};
-
-const URLToBlob = (url:imURL) => fetch(url).then(res => res.blob());
-export const blobToOURL = (blob:Blob) => URL.createObjectURL(blob);
-const blobToB64 = readerProducer(r => r.readAsDataURL) as (b:Blob) => Promise<string>;
-export const blobToText = readerProducer(r => r.readAsText) as (b:Blob) => Promise<string>;
 
