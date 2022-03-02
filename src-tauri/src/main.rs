@@ -14,16 +14,10 @@
 
 mod lib;
 use lib::{JSONImages, compressed_viewer_to_zip, compressed_viewer_to_flat, JSONCompressedImgState};
-use serde::{Serialize, Deserialize};
-#[derive(Serialize, Deserialize)]
-pub struct JSONCompViewerState {
-    pub json_images: JSONImages,
-    pub zoom: f64
-}
 
 #[tauri::command]
-async fn compile_compressed_images(json: JSONCompViewerState) -> Result<Vec<u8>, String> {
-    compressed_viewer_to_zip(json.json_images, json.zoom).map_err(|e| e.to_string())
+async fn compile_compressed_images(json_images: JSONImages, zoom: f64) -> Result<Vec<u8>, String> {
+    compressed_viewer_to_zip(json_images, zoom).map_err(|e| e.to_string())
 }
 
 // TODO: test this command so that we can move on with the "send a compressed state" plan
