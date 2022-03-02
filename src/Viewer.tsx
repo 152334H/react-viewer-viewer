@@ -3,10 +3,15 @@
 import * as React from 'react'
 import {FC} from 'react'
 // MUI imports
-import {KeyboardReturn} from '@mui/icons-material';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import Switch from '@mui/material/Switch';
 import InputBase from '@mui/material/InputBase';
+// MUI Icons
+import {KeyboardReturn} from '@mui/icons-material';
+import DeleteIcon from '@mui/icons-material/Delete';
+import FileCopyIcon from '@mui/icons-material/FileCopy';
+import KeyboardArrowLeftIcon from '@mui/icons-material/KeyboardArrowLeft';
+import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
 // imports developed / edited for project
 import Viewer from 'react-viewer'
 import {IconButtonSimple,notifyPromise,isTauri} from './UI'
@@ -20,13 +25,23 @@ interface ToolbarConfig { // private from react-viewer/ViewerProps
     render?: React.ReactNode;
     onClick?: (activeIm?: FullImageState) => void;
 }
+
 //const logAndRet = (v:any) => {console.log(v); return v}
 
+const Blank = (props: any) => <></>
 // additional toolbar buttons.
-// TODO: I haven't figured out how to make these display icons yet
 const IconLocal = ({type}: {type:string}) => { // cribbed from react-viewer/Icon.tsx
-  const prefixCls = 'react-viewer-icon'
-  return <i className={`${prefixCls} ${prefixCls}-${type}`}></i>
+  const pfx = 'react-viewer-icon'
+  const Comp = type === 'dupe' ? FileCopyIcon :
+    type === 'trash' ? DeleteIcon :
+    type === 'shiftimg_left' ? KeyboardArrowLeftIcon :
+    type === 'shiftimg_right' ? KeyboardArrowRightIcon :
+    Blank;
+  return <i className={`${pfx} ${pfx}-${type}`}>
+    <Comp fontSize="small" style={{
+      position: 'relative', top: '4px'
+    }}/>
+  </i>
 }
 
 const swappedImgs = (i: number, j: number, imgs: Images) => {
@@ -42,14 +57,14 @@ type ButtonLambda = (dispatch: (cmd: ImagesStateCmd) => void) => ToolbarConfig[]
 const makeButtons: ButtonLambda = (dispatch) => ([
   {
     key: "dupe",
-    render: <IconLocal type="a"/>,
+    render: <IconLocal type="dupe"/>,
     onClick: () => {
       dispatch({type:'dupeActiveImage'});
     }
   },
   {
     key: "trash",
-    render: <IconLocal type="b"/>,
+    render: <IconLocal type="trash"/>,
     onClick: (activeImage: FullImageState) => {
       if (activeImage.alt) {
         dispatch({type:'setIndex', val: activeImage.alt-1})
@@ -61,8 +76,8 @@ const makeButtons: ButtonLambda = (dispatch) => ([
   },
   // TODO:shift_picture_* are visually bugged because imgs[] and ind do not update in sync for react-viewer. Upstream fix necessary.
   {
-    key: "shift_picture_left",
-    render: <IconLocal type="c"/>,
+    key: "shiftimg_left",
+    render: <IconLocal type="shiftimg_left"/>,
     onClick: (activeImage: FullImageState) => {
       const ind = activeImage.alt;
       if (ind > 0) {
@@ -72,8 +87,8 @@ const makeButtons: ButtonLambda = (dispatch) => ([
     }
   },
   {
-    key: "shift_picture_right",
-    render: <IconLocal type="d"/>,
+    key: "shiftimg_right",
+    render: <IconLocal type="shiftimg_right"/>,
     onClick: (activeImage: FullImageState) => {
       const ind = activeImage.alt;
       // will potentially cause errors
