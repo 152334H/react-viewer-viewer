@@ -9,7 +9,6 @@
    * fix res => res.blob() <-- chromium issue. Very unlikely to be resolved.
    * draggable preview of images (to reorganise)
    * Drag and drop for file upload?
-   * fix typing
    * figure out how to accomodate for different zoom values across devices
 */
 
@@ -81,12 +80,24 @@ function loadSessions() {
   return p
 }
 
+async function saveSessionSilent(sessions: SessionState[], type: 'Blob' | 'B64') {
+  const meth = (r: ReducedImages) => (
+    type === 'Blob' ? r.intoBlobs() :
+                      r.intoB64()
+  );
+  const reduce = (imgs: Images) => meth(new ReducedImages(imgs))
+  return await Promise.all(sessions.map(async s => {
+    const {imgs, flattened, ...rest} = s;
+    return {
+      ...rest, imgs_r: await reduce(imgs),
+      flattened_r: flattened ? await reduce(flattened) : null
+    }
+  }));
+}
+
 function saveSessions(sessions: SessionState[]) {
-  const p = Promise.all(sessions.map(async (s) => {
-    const imgs_r = await new ReducedImages(s.imgs).intoBlobs();
-    const flattened_r = s.flattened ? await new ReducedImages(s.flattened).intoBlobs() : null; // slightly inefficient
-    return {...s, imgs_r, flattened_r};
-  })).then(sessions => LF.setItem('sessions', sessions));
+  const p = saveSessionSilent(sessions, "Blob")
+    .then(sessions => LF.setItem('sessions', sessions));
   notifyPromise(p, 'saving sessions...');
   return p
 }
