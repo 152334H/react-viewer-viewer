@@ -29,11 +29,11 @@ const UploadAll = ({setImgs,setName}: {
 }) => {
   const onChange = (e:any) => {
     const f: File = e.target.files[0];
-    setName(f.name.replace(/\.json$/,'')
-            .replace(/images-[0-9]*-/,''));
     blobToText(f).then((json: string) => {
-      const obj = ReducedImages.fromObj(JSON.parse(json))
-      obj.intoImgs().then(setImgs);
+      const obj = JSON.parse(json);
+      ReducedImages.fromObj(obj)
+        .intoImgs().then(setImgs);
+      if (obj.name) setName(obj.name);
     })
   }
 
@@ -55,7 +55,8 @@ const nameTimestamp = (name:string) =>
 const SaveAll = ({imgs,name}: {imgs:Images,name:string}) => {
   const saveAll = () => {
     new ReducedImages(imgs).intoB64()
-    .then(compImgs => saveObjAsJSON(compImgs,
+    .then(compImgs => saveObjAsJSON(
+      {...compImgs, name },
       nameTimestamp(name))
     )
   }
