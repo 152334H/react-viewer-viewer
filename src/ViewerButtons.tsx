@@ -23,23 +23,40 @@ const Uploader = ({addImgs}: {addImgs: (urls:string[])=>void}) => {
 }
 
 // button 2: load viewerstate from json file
-const UploadAll = ({setImgs}: {setImgs:(imgs:Images)=>void}) => {
-  const onChange = (e:any) => blobToText(e.target.files[0]).then((json: string) => {
-    const obj = ReducedImages.fromObj(JSON.parse(json))
-    obj.intoImgs().then(setImgs);
-  })
+const UploadAll = ({setImgs,setName}: {
+  setImgs: (imgs:Images) => void,
+  setName: (name:string) => void
+}) => {
+  const onChange = (e:any) => {
+    const f: File = e.target.files[0];
+    setName(f.name.replace(/\.json$/,'')
+            .replace(/images-[0-9]*-/,''));
+    blobToText(f).then((json: string) => {
+      const obj = ReducedImages.fromObj(JSON.parse(json))
+      obj.intoImgs().then(setImgs);
+    })
+  }
 
   return <UploadButton id="icon-button-file-all"
     icon={<Upload/>} onChange={onChange}/>
 }
 
+const saveObjAsJSON = (obj:any,name:string) =>
+  saveAs(new Blob([JSON.stringify(obj)],
+      {type: "text/json;charset=utf-8"}
+    ), name+'.json');
+
+const nameTimestamp = (name:string) => 
+  `images-${Date.now()}-${name
+    .replace(/[^a-zA-Z0-9 ]/gi, '_')
+  }`
+
 // button 3: save image viewer state to pickle (image-$timestamp.json)
-const SaveAll = ({imgs}: {imgs:Images}) => {
+const SaveAll = ({imgs,name}: {imgs:Images,name:string}) => {
   const saveAll = () => {
-    new ReducedImages(imgs).intoB64().then(compImgs => 
-      saveAs(new Blob([JSON.stringify(compImgs)],
-        {type: "text/json;charset=utf-8"}),
-        `images-${Date.now()}.json`)
+    new ReducedImages(imgs).intoB64()
+    .then(compImgs => saveObjAsJSON(compImgs,
+      nameTimestamp(name))
     )
   }
   return <IconButtonSimple icon={<Download/>} onClick={saveAll}/>
@@ -79,13 +96,13 @@ const zipImages = async (imgs:Images) => {
 }
 
 // button 4: save image viewer state to a bunch of images in a zip
-const CompileButton = ({imgs}: {imgs:Images}) => {
+const CompileButton = ({imgs,name}: {imgs:Images,name:string}) => {
   if (!isTauri())
     return <></>;
   return <LoadingButton icon={<Archive/>}
     onClick={
       () => zipImages(imgs).then(b =>
-        saveAs(b, `images-${Date.now()}.zip`)
+        saveAs(b, nameTimestamp(name)+'.zip')
     )}/>
 }
 
@@ -95,10 +112,12 @@ interface VBProps {
   updateImgs: (imgs:Images) => void;
   setFlattened: (flat: null|Images) => void;
   setActiveIndex: (i:number) => void;
+  setName: (name:string) => void;
+  name: string;
 }
 
 export const ViewerButtons: FC<VBProps> = (
-  {setShow,imgs,updateImgs,setFlattened,setActiveIndex}
+  {setShow,imgs,updateImgs,setFlattened,setActiveIndex,name,setName}
   ) => {
   const replaceImgs = (newImgs:Images) => {
     if (imgs.length !== 0) { setActiveIndex(0); }
@@ -111,12 +130,12 @@ export const ViewerButtons: FC<VBProps> = (
           scale: 1, left: 0, top: 0, rotate: 0
       })))
     )}/>
-    <UploadAll setImgs={replaceImgs}/>
+    <UploadAll setImgs={replaceImgs} setName={setName}/>
     {imgs.length>0 && (()=>(<>
       <IconButtonSimple icon={<Collections/>}
         onClick={() => setShow(true)}/>
-      <SaveAll imgs={imgs}/>
-      <CompileButton imgs={imgs}/>
+      <SaveAll imgs={imgs} name={name}/>
+      <CompileButton imgs={imgs} name={name}/>
     </>))()}
   </>);
 }

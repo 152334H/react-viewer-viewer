@@ -290,8 +290,12 @@ const ViewerSession = ({sess,goBack}: {
         onChange={(e:any) => setName(e.target.value)}
       />
       <h5>zoom level: {window.devicePixelRatio}</h5>
-      <ViewerButtons setShow={setShow} imgs={state.imgs} updateImgs={updateImgs}
-        setFlattened={setFlattened} setActiveIndex={setActiveIndex}/>
+      <ViewerButtons setShow={setShow} name={name}
+        imgs={state.imgs} updateImgs={updateImgs}
+        setActiveIndex={setActiveIndex}
+        setFlattened={setFlattened}
+        setName={setName}
+      />
       {state.show && <ViewerButMoreSimple
         state={(focused) ? {...state, imgs: flattened} : state} focused={focused}
         setShow={setShow}
