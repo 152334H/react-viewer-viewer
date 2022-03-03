@@ -1,11 +1,19 @@
+/* This file is only responsible for the buttons that appear on the Viewer viewer page
+*/
+
+// react imports
 import * as React from 'react'
 import {FC} from 'react'
-// MUI imports
-import {PhotoCamera, Download, Upload, Collections, Archive} from '@mui/icons-material';
-
+// MUI Icons
+import CollectionsIcon from '@mui/icons-material/Collections';
+import PhotoCameraIcon from '@mui/icons-material/PhotoCamera';
+import DownloadIcon from '@mui/icons-material/Download';
+import UploadIcon from '@mui/icons-material/Upload';
+import ArchiveIcon from '@mui/icons-material/Archive';
+// other imports
 import {invoke} from '@tauri-apps/api/tauri'
 import {saveAs} from 'file-saver'
-
+// imports developed / edited for project
 import {IconButtonSimple,UploadButton,isTauri,LoadingButton} from './UI'
 import {Images,ReducedImages} from './ImageState'
 import {blobToOURL,blobToText} from './ImageState'
@@ -19,7 +27,7 @@ const Uploader = ({addImgs}: {addImgs: (urls:string[])=>void}) => {
     ).then(addImgs)
 
   return <UploadButton id="icon-button-file"
-    icon={<PhotoCamera />} onChange={onChange}/>
+    icon={<PhotoCameraIcon />} onChange={onChange}/>
 }
 
 // button 2: load viewerstate from json file
@@ -38,7 +46,7 @@ const UploadAll = ({setImgs,setName}: {
   }
 
   return <UploadButton id="icon-button-file-all"
-    icon={<Upload/>} onChange={onChange}/>
+    icon={<UploadIcon/>} onChange={onChange}/>
 }
 
 export const saveObjAsJSON = (obj:any,name:string) =>
@@ -60,7 +68,7 @@ const SaveAll = ({imgs,name}: {imgs:Images,name:string}) => {
       nameTimestamp(name))
     )
   }
-  return <IconButtonSimple icon={<Download/>} onClick={saveAll}/>
+  return <IconButtonSimple icon={<DownloadIcon/>} onClick={saveAll}/>
 }
 
 export const flattenImages = async (imgs:Images) => {
@@ -100,7 +108,7 @@ const zipImages = async (imgs:Images) => {
 const CompileButton = ({imgs,name}: {imgs:Images,name:string}) => {
   if (!isTauri())
     return <></>;
-  return <LoadingButton icon={<Archive/>}
+  return <LoadingButton icon={<ArchiveIcon/>}
     onClick={
       () => zipImages(imgs).then(b =>
         saveAs(b, nameTimestamp(name)+'.zip')
@@ -133,7 +141,7 @@ export const ViewerButtons: FC<VBProps> = (
     )}/>
     <UploadAll setImgs={replaceImgs} setName={setName}/>
     {imgs.length>0 && (()=>(<>
-      <IconButtonSimple icon={<Collections/>}
+      <IconButtonSimple icon={<CollectionsIcon/>}
         onClick={() => setShow(true)}/>
       <SaveAll imgs={imgs} name={name}/>
       <CompileButton imgs={imgs} name={name}/>

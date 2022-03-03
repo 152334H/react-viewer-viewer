@@ -12,21 +12,24 @@
    * figure out how to accomodate for different zoom values across devices
 */
 
+// react imports
 import * as React from 'react';
-// Material UI
+// MUI imports
 import {createTheme, ThemeProvider} from '@mui/material/styles'
 import CssBaseline from '@mui/material/CssBaseline';
 import List from '@mui/material/List';
 import ListItem from '@mui/material/ListItem';
 import ListItemText from '@mui/material/ListItemText';
 import ListItemButton from '@mui/material/ListItemButton';
-import Add from '@mui/icons-material/Add';
+// MUI Icons
+import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
-import {Download, Upload} from '@mui/icons-material';
+import DownloadIcon from '@mui/icons-material/Download';
+import UploadIcon from '@mui/icons-material/Upload';
 // other imports
 import LF from 'localforage';
 import {ToastContainer} from 'react-toastify';
-// locally developed
+// imports developed / edited for project
 import ViewerSession,{SessionState} from './Viewer'
 import {Images,ReducedImages,blobToText} from './ImageState'
 import {IconButtonSimple,notifyPromise,UploadButton} from './UI'
@@ -78,7 +81,7 @@ function saveSessions(sessions: SessionState[]) {
 
 const SaveSessionsButton = ({sessions}: {
   sessions: SessionState[]
-}) => (<IconButtonSimple icon={<Download/>}
+}) => (<IconButtonSimple icon={<DownloadIcon/>}
   onClick={() =>
     saveSessionSilent(sessions, 'B64')
       .then(savedSess => saveObjAsJSON(
@@ -89,7 +92,7 @@ const SaveSessionsButton = ({sessions}: {
 
 const LoadSessionsButton = ({setSessions}: {
   setSessions: (s: SessionState[]) => void
-}) => (<UploadButton icon={<Upload/>}
+}) => (<UploadButton icon={<UploadIcon/>}
   onChange={(e) => {
     const f: File = e.target.files[0];
     blobToText(f).then((s: string) => {
@@ -111,7 +114,7 @@ const MainMenu = ({sessions,select,setSessions}: {
 }) => (<>
   <LoadSessionsButton setSessions={setSessions}/>
   <SaveSessionsButton sessions={sessions}/>
-  <IconButtonSimple icon={<Add/>} onClick={() => select(null)}/>
+  <IconButtonSimple icon={<AddIcon/>} onClick={() => select(null)}/>
   {sessions.length>0 && <div><List sx={{maxWidth: 400}}>
     {sessions.map((sess,i) =>
       <ListItem key={i} onClick={() => select(i)}

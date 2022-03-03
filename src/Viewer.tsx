@@ -1,22 +1,22 @@
 /* This is the page for a single image viewer sewssion.
 */
-import * as React from 'react'
-import {FC} from 'react'
+
+// react imports
+import React, {FC} from 'react'
 // MUI imports
 import FormControlLabel from '@mui/material/FormControlLabel';
 import Switch from '@mui/material/Switch';
 import InputBase from '@mui/material/InputBase';
 // MUI Icons
-import {KeyboardReturn} from '@mui/icons-material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import FileCopyIcon from '@mui/icons-material/FileCopy';
+import KeyboardReturnIcon from '@mui/icons-material/KeyboardReturn';
 import KeyboardArrowLeftIcon from '@mui/icons-material/KeyboardArrowLeft';
 import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
 // imports developed / edited for project
 import Viewer from 'react-viewer'
 import {IconButtonSimple,notifyPromise,isTauri} from './UI'
-import {ViewerButtons} from './ViewerButtons'
-import {flattenImages} from './ViewerButtons'
+import {ViewerButtons,flattenImages} from './ViewerButtons'
 import {Images,FullImageState} from './ImageState'
 
 interface ToolbarConfig { // private from react-viewer/ViewerProps
@@ -271,7 +271,7 @@ const ViewerSession = ({sess,goBack}: {
   return (<div className="App">
     <header className="App-header">
       <div style={{float:'right'}}>
-        <IconButtonSimple icon={<KeyboardReturn/>}
+        <IconButtonSimple icon={<KeyboardReturnIcon/>}
         onClick={()=>goBack({...state, flattened, name})}/>
       </div>
       <div style={{clear:'both', float:'right'}}>

@@ -1,4 +1,8 @@
-/* FileReader utils */
+/* For all types, classes, and conversions involving images and their state.
+* No imports allowed
+*/
+
+// FileReader utils
 const readerProducer = (
   meth: (r:FileReader) => (
      (_: any, blob:any) => void

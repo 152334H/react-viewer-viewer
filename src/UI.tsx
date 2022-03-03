@@ -1,10 +1,14 @@
+/* Button skeletons, toast notifications, and misc funcs like isTauri */
+
+// react imports
 import React, {ReactElement} from 'react'
+// MUI imports
+import CircularProgress from '@mui/material/CircularProgress';
+import {green,red} from '@mui/material/colors';
 import IconButton from '@mui/material/Button';
 import Input from '@mui/material/Input';
 import Box from '@mui/material/Box';
-import CircularProgress from '@mui/material/CircularProgress';
-import {green,red} from '@mui/material/colors';
-
+// other imports
 import {toast} from 'react-toastify';
 
 export const isTauri = () => (
