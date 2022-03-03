@@ -37,8 +37,8 @@ interface FullImageState extends ImageMeta{
 type Images = FullImageState[];
 
 class ReducedImages {
+  readonly imgStates: DerefImageState[];
   dataURLs: (string|Blob|imURL)[];
-  imgStates: DerefImageState[];
   datatype?: 'B64' | 'Blob' | 'OURL';
 
   constructor(imgs: Images) {
