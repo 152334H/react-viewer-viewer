@@ -22,50 +22,24 @@ import ListItemText from '@mui/material/ListItemText';
 import ListItemButton from '@mui/material/ListItemButton';
 import Add from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
+import {Download, Upload} from '@mui/icons-material';
 // other imports
 import LF from 'localforage';
 import {ToastContainer} from 'react-toastify';
 // locally developed
 import ViewerSession,{SessionState} from './Viewer'
-import {Images,ReducedImages} from './ImageState'
-import {IconButtonSimple,notifyPromise} from './UI'
-
-const MainMenu = ({sessions,select}: {
-  sessions: SessionState[],
-  select: (i: null|number, rm?: boolean) => void
-}) => (<>
-  <IconButtonSimple icon={<Add/>} onClick={() => select(null)}/>
-  {sessions.length>0 && <div><List sx={{maxWidth: 400}}>
-    {sessions.map((sess,i) =>
-      <ListItem key={i} onClick={() => select(i)}
-        secondaryAction={<IconButtonSimple
-          icon={<DeleteIcon/>} onClick={(e) => {
-            e.stopPropagation()
-            select(i,true)
-          }}
-        />}
-      >
-        <ListItemButton>
-          <ListItemText>{sess.name}</ListItemText>
-        </ListItemButton>
-    </ListItem>)}
-  </List></div>}
-</>)
-
-const sessionFromImages = (imgs: Images): SessionState => ({
-  imgs, flattened: null, show: false,
-  name: `session-${Date.now()}`, activeIndex: 0
-});
+import {Images,ReducedImages,blobToText} from './ImageState'
+import {IconButtonSimple,notifyPromise,UploadButton} from './UI'
+import {saveObjAsJSON} from './ViewerButtons'
 
 interface StoredSession extends Omit<SessionState,'imgs' | 'flattened'> {
   imgs_r: ReducedImages;
   flattened_r: ReducedImages | null;
 }
 
-async function loadSessionsSilent() {
-  let compSessions: StoredSession[] = await LF.getItem('sessions');
+async function loadSessionsSilent(compSessions: StoredSession[]) {
   if (compSessions === null) return [];
-  let sessions = await Promise.all(compSessions.map(async (sess) => {
+  const sessions = await Promise.all(compSessions.map(async (sess) => {
     const imgs = await ReducedImages.fromObj(sess.imgs_r).intoImgs();
     const flattened = sess.flattened_r ? await ReducedImages.fromObj(sess.flattened_r).intoImgs() : null;
     const {imgs_r, flattened_r, ...rest} = sess;
@@ -75,7 +49,7 @@ async function loadSessionsSilent() {
 }
 
 function loadSessions() {
-  const p = loadSessionsSilent();
+  const p = LF.getItem('sessions').then(loadSessionsSilent);
   notifyPromise(p, 'loading saved sessions...');
   return p
 }
@@ -97,12 +71,64 @@ async function saveSessionSilent(sessions: SessionState[], type: 'Blob' | 'B64')
 
 function saveSessions(sessions: SessionState[]) {
   const p = saveSessionSilent(sessions, "Blob")
-    .then(sessions => LF.setItem('sessions', sessions));
+    .then(res => LF.setItem('sessions', res));
   notifyPromise(p, 'saving sessions...');
   return p
 }
 
-// TODO: add button to export/load sessions
+const SaveSessionsButton = ({sessions}: {
+  sessions: SessionState[]
+}) => (<IconButtonSimple icon={<Download/>}
+  onClick={() =>
+    saveSessionSilent(sessions, 'B64')
+      .then(savedSess => saveObjAsJSON(
+        savedSess, `sessions-${Date.now()}`
+      ))
+  }
+/>)
+
+const LoadSessionsButton = ({setSessions}: {
+  setSessions: (s: SessionState[]) => void
+}) => (<UploadButton icon={<Upload/>}
+  onChange={(e) => {
+    const f: File = e.target.files[0];
+    blobToText(f).then((s: string) => {
+      const sessions: StoredSession[] = JSON.parse(s);
+      return loadSessionsSilent(sessions)
+    }).then(setSessions)
+  }} id="icon-button-load-all-sessions"
+/>)
+
+const sessionFromImages = (imgs: Images): SessionState => ({
+  imgs, flattened: null, show: false,
+  name: `session-${Date.now()}`, activeIndex: 0
+});
+
+const MainMenu = ({sessions,select,setSessions}: {
+  sessions: SessionState[],
+  setSessions: (ss: SessionState[]) => void,
+  select: (i: null|number, rm?: boolean) => void
+}) => (<>
+  <LoadSessionsButton setSessions={setSessions}/>
+  <SaveSessionsButton sessions={sessions}/>
+  <IconButtonSimple icon={<Add/>} onClick={() => select(null)}/>
+  {sessions.length>0 && <div><List sx={{maxWidth: 400}}>
+    {sessions.map((sess,i) =>
+      <ListItem key={i} onClick={() => select(i)}
+        secondaryAction={<IconButtonSimple
+          icon={<DeleteIcon/>} onClick={(e) => {
+            e.stopPropagation()
+            select(i,true)
+          }}
+        />}
+      >
+        <ListItemButton>
+          <ListItemText>{sess.name}</ListItemText>
+        </ListItemButton>
+    </ListItem>)}
+  </List></div>}
+</>)
+
 const RealApp = () => {
   const [menu,setMenu] = React.useState('main');
   const [vind,setVind] = React.useState(null);
@@ -129,7 +155,7 @@ const RealApp = () => {
         setVind(i);
         setMenu('viewer');
       }
-    }} sessions={sessions}/> :
+    }} sessions={sessions} setSessions={setSessions}/> :
     <ViewerSession sess={sessions[vind]}
       goBack={sess => {
         const newSessions = sessions.slice();

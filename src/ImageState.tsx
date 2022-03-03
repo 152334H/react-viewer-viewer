@@ -109,8 +109,7 @@ class ReducedImages {
   }
 
   async intoImgs() {
-    this.add_type_if_needed();
-    await this.intoOURLs();
+    await this.intoOURLs(); // will add type
     return this.imgStates.map(im => (
       {...im, src: this.dataURLs[im.src]}
     ));

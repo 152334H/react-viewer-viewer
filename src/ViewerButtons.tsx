@@ -41,7 +41,7 @@ const UploadAll = ({setImgs,setName}: {
     icon={<Upload/>} onChange={onChange}/>
 }
 
-const saveObjAsJSON = (obj:any,name:string) =>
+export const saveObjAsJSON = (obj:any,name:string) =>
   saveAs(new Blob([JSON.stringify(obj)],
       {type: "text/json;charset=utf-8"}
     ), name+'.json');
