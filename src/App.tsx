@@ -8,7 +8,7 @@
 /* TODO:
    * fix res => res.blob() <-- chromium issue. Very unlikely to be resolved.
    * draggable preview of images (to reorganise)
-   * Drag and drop for file upload?
+   * Drag and drop for file upload? <-- heard that something different needs to be done to impl this in tauri
    * figure out how to accomodate for different zoom values across devices
 */
 
