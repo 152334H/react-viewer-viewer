@@ -274,7 +274,7 @@ const ViewerSession = ({sess,goBack}: {
         <IconButtonSimple icon={<KeyboardReturn/>}
         onClick={()=>goBack({...state, flattened, name})}/>
       </div>
-      <div style={{clear: 'both', float:'right'}}>
+      <div style={{clear:'both', float:'right'}}>
         <FormControlLabel label="Focused" control={
           <Switch checked={focused} disabled={focusLocked || !isTauri()} onChange={(e) => {
             if (e.target.checked) {
