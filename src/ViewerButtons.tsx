@@ -119,14 +119,13 @@ interface VBProps {
   setShow: (b:boolean) => void;
   imgs: Images;
   updateImgs: (imgs:Images) => void;
-  setFlattened: (flat: null|Images) => void;
   setActiveIndex: (i:number) => void;
   setName: (name:string) => void;
   name: string;
 }
 
 export const ViewerButtons: FC<VBProps> = (
-  {setShow,imgs,updateImgs,setFlattened,setActiveIndex,name,setName}
+  {setShow,imgs,updateImgs,setActiveIndex,name,setName}
   ) => {
   const replaceImgs = (newImgs:Images) => {
     if (imgs.length !== 0) { setActiveIndex(0); }

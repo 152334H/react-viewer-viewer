@@ -15,8 +15,8 @@ import KeyboardArrowLeftIcon from '@mui/icons-material/KeyboardArrowLeft';
 import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
 // imports developed / edited for project
 import Viewer from 'react-viewer'
-import {IconButtonSimple,notifyPromise,isTauri} from './UI'
-import {ViewerButtons,flattenImages} from './ViewerButtons'
+import {IconButtonSimple} from './UI'
+import {ViewerButtons} from './ViewerButtons'
 import {Images,FullImageState} from './ImageState'
 
 interface ToolbarConfig { // private from react-viewer/ViewerProps
@@ -225,30 +225,15 @@ const ViewerSession = ({sess,goBack}: {
   const [state, dispatch] = React.useReducer(sessReducer, {
     show: sess.show, activeIndex: sess.activeIndex, imgs: sess.imgs
   });
-  const [flattened, setFlattened] = React.useState<null|Images>(sess.flattened);
-  const [focusLocked, setFocusLocked] = React.useState(sess.flattened === null && sess.imgs === []);
   const [manualUpdate, setManualUpdate] = React.useState(0);
   if (state.show === false && manualUpdate !== 0) { setManualUpdate(0); }
-  const focused = flattened !== null;
+  const [focused, setFocused] = React.useState(false);
 
-  const updateImgs = focused ? (imgs:Images) => setFlattened(imgs)  // imgs.length should be immutable in this case.
-    : (imgs:Images) => dispatch({type:'setImgs', val: imgs});
+  const updateImgs = (imgs:Images) => dispatch({type:'setImgs', val: imgs});
   const setShow = (b: boolean) => dispatch({type:'setShow', val:b});
   const setActiveIndex = (i: number) => dispatch({type:'setIndex', val:i});
   const addedButtons = makeButtons(dispatch);
-  const makeFlattened = () => {
-    const p = flattenImages(state.imgs).then((flattened: Images) => {
-      setActiveIndex(0); // send viewer back to start of images
-      setFlattened(flattened);
-    }).catch(e => {
-      window.alert(`something went wrong in tauri command "flatten_images": ${e}`);
-      throw new Error('invoke error')
-    });
-    notifyPromise(p, 'Flattening images...');
-    return p;
-  }
   const handleKeyPress = React.useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
-    if (focused) { return; } // don't do anything in the focused state (imgs are flattened)
     // TODO: cribbing on addedButtons[] is really stupid
     if (['p','d','[',']','0','$'].includes(e.key)) {
       setManualUpdate(manualUpdate+1);
@@ -272,15 +257,13 @@ const ViewerSession = ({sess,goBack}: {
     <header className="App-header">
       <div style={{float:'right'}}>
         <IconButtonSimple icon={<KeyboardReturnIcon/>}
-        onClick={()=>goBack({...state, flattened, name})}/>
+        onClick={()=>goBack({...state, flattened: null, name})}/>
       </div>
       <div style={{clear:'both', float:'right'}}>
         <FormControlLabel label="Focused" control={
-          <Switch checked={focused} disabled={focusLocked || !isTauri()} onChange={(e) => {
-            if (e.target.checked) {
-              setFocusLocked(true)
-              makeFlattened().then(() => setFocusLocked(false));
-            } else { setFlattened(null); } // purge flattened images when changes are needed
+          <Switch checked={focused} disabled={false} onChange={e => {
+            setActiveIndex(0);
+            setFocused(!focused);
           }}/>
         }/>
       </div>
@@ -293,11 +276,10 @@ const ViewerSession = ({sess,goBack}: {
       <ViewerButtons setShow={setShow} name={name}
         imgs={state.imgs} updateImgs={updateImgs}
         setActiveIndex={setActiveIndex}
-        setFlattened={setFlattened}
         setName={setName}
       />
       {state.show && <ViewerButMoreSimple
-        state={(focused) ? {...state, imgs: flattened} : state} focused={focused}
+        state={state} focused={focused}
         setShow={setShow}
         addedButtons={addedButtons}
         setActiveIndex={setActiveIndex}
