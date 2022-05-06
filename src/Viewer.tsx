@@ -251,7 +251,7 @@ const ViewerSession = ({sess,goBack}: {
     } else if (e.key === '$') {
       setActiveIndex(state.imgs.length-1);
     }
-  }, [addedButtons, state, focused, manualUpdate]);
+  }, [addedButtons, state, manualUpdate]);
 
   return (<div className="App">
     <header className="App-header">
