@@ -2,7 +2,7 @@ name: "compile"
 on:
   push:
     branches:
-      - release
+      - IGNORE
 
 jobs:
   publish-tauri:
