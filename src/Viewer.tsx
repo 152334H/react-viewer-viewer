@@ -66,12 +66,7 @@ const makeButtons: ButtonLambda = (dispatch) => ([
     key: "trash",
     render: <IconLocal type="trash"/>,
     onClick: (activeImage: FullImageState) => {
-      if (activeImage.alt) {
-        dispatch({type:'setIndex', val: activeImage.alt-1})
-      }
-      setTimeout(() => // stupid hack to get around react-viewer bug
-        dispatch({type:'deleteImageAt', val:activeImage.alt})
-      ,0);
+      dispatch({type:'deleteImageAt', val:activeImage.alt, dispatch});
     }
   },
   // TODO:shift_picture_* are visually bugged because imgs[] and ind do not update in sync for react-viewer. Upstream fix necessary.
@@ -149,6 +144,7 @@ export interface SessionState extends ImagesState {
 type ImagesStateCmd = {
   type: string;
   val?: any;
+  dispatch?: (s: ImagesStateCmd) => void;
 }
 
 
@@ -186,6 +182,15 @@ function sessReducer(s: ImagesState, a: ImagesStateCmd): ImagesState {
     case 'deleteImageAt': {
       if (a.val >= s.imgs.length || a.val < 0){
         window.alert("deleteImageAt out of bounds");
+      }
+      // move activeIndex back if the last image is getting removed
+      if (s.imgs.length!==1 && s.imgs.length-1===s.activeIndex) {
+        a.dispatch({type: 'setIndex', val: s.activeIndex-1})
+        // make sure deletion happens AFTER index change
+        setTimeout(() => 
+          a.dispatch({type: 'deleteImageAt', val: a.val})
+        ,0);
+        return s;
       }
       // hide viewer if there'll be nothing
       const show = s.show && s.imgs.length!==1;
@@ -235,10 +240,10 @@ const ViewerSession = ({sess,goBack}: {
   const addedButtons = makeButtons(dispatch);
   const handleKeyPress = React.useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
     // TODO: cribbing on addedButtons[] is really stupid
-    if (['p','d','[',']','0','$'].includes(e.key)) {
+    if (['r','d','[',']','0','$'].includes(e.key)) {
       setManualUpdate(manualUpdate+1);
     }
-    if (e.key === 'p') {
+    if (e.key === 'r') {
       addedButtons[0].onClick();
     } else if (e.key === 'd') {
       addedButtons[1].onClick(state.imgs[state.activeIndex]);
@@ -289,5 +294,6 @@ const ViewerSession = ({sess,goBack}: {
     </header>
   </div>)
 }
+
 
 export default ViewerSession;
