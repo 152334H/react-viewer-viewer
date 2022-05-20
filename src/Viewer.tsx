@@ -262,7 +262,9 @@ const ViewerSession = ({sess,goBack}: {
     <header className="App-header">
       <div style={{float:'right'}}>
         <IconButtonSimple icon={<DeleteIcon/>}
-        onClick={()=>goBack({...state, imgs: [], flattened: null, name})}/>
+        onClick={()=>window.confirm(`Delete the "${name}" session?`)
+          ? goBack({...state, imgs: [], flattened: null, name})
+          : 0}/>
         <IconButtonSimple icon={<KeyboardReturnIcon/>}
         onClick={()=>goBack({...state, flattened: null, name})}/>
       </div>

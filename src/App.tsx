@@ -167,7 +167,10 @@ const RealApp = () => {
           setSaveSessions(newSessions);
           setMenu('main');
         } else {
-          setSessions(sessions.slice(0,vind).concat(
+          // we don't know whether this was a blank unsaved session,
+          // or an older saved-but-now-deleted session,
+          // so just push a db save
+          setSaveSessions(sessions.slice(0,vind).concat(
             sessions.slice(vind+1)))
           setMenu('main');
         }
