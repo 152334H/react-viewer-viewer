@@ -270,7 +270,7 @@ const ViewerSession = ({sess,goBack}: {
       </div>
       <div style={{clear:'both', float:'right'}}>
         <FormControlLabel label="Focused" control={
-          <Switch checked={focused} disabled={false} onChange={e => {
+          <Switch checked={focused} disabled={state.imgs.length===0} onChange={e => {
             setActiveIndex(0);
             setFocused(!focused);
           }}/>
