@@ -30,6 +30,7 @@ interface ImageMeta {
     left: number
     top: number
     rotate: number
+    mirror: boolean
 }
 interface DerefImageState extends ImageMeta {
     src: number // index for dataURLs[]

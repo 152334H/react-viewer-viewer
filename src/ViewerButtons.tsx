@@ -135,7 +135,7 @@ export const ViewerButtons: FC<VBProps> = (
     <Uploader addImgs={(ls:string[]) => updateImgs(imgs
       .concat(ls.map((url,ind) => ({
           src: url, alt: imgs.length+ind,
-          scale: 1, left: 0, top: 0, rotate: 0
+          scale: 1, left: 0, top: 0, rotate: 0, mirror: false
       })))
     )}/>
     <UploadAll setImgs={replaceImgs} setName={setName}/>
