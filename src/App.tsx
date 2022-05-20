@@ -161,10 +161,16 @@ const RealApp = () => {
     }} sessions={sessions} setSessions={setSessions}/> :
     <ViewerSession sess={sessions[vind]}
       goBack={sess => {
-        const newSessions = sessions.slice();
-        newSessions[vind] = sess;
-        setSaveSessions(newSessions);
-        setMenu('main');
+        if (sess.imgs.length) {
+          const newSessions = sessions.slice();
+          newSessions[vind] = sess;
+          setSaveSessions(newSessions);
+          setMenu('main');
+        } else {
+          setSessions(sessions.slice(0,vind).concat(
+            sessions.slice(vind+1)))
+          setMenu('main');
+        }
       }}
     />
   }</>);

@@ -261,6 +261,8 @@ const ViewerSession = ({sess,goBack}: {
   return (<div className="App">
     <header className="App-header">
       <div style={{float:'right'}}>
+        <IconButtonSimple icon={<DeleteIcon/>}
+        onClick={()=>goBack({...state, imgs: [], flattened: null, name})}/>
         <IconButtonSimple icon={<KeyboardReturnIcon/>}
         onClick={()=>goBack({...state, flattened: null, name})}/>
       </div>
