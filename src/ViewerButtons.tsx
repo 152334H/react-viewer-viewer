@@ -131,13 +131,30 @@ export const ViewerButtons: FC<VBProps> = (
     if (imgs.length !== 0) { setActiveIndex(0); }
     updateImgs(newImgs);
   }
+  const calcScale = (w: number, h: number) => {
+    // TODO: apply window.screen.* elsewhere.
+    // also maybe use availableHeight/Width instead???
+    const rat_w = window.screen.width/w;
+    const rat_h = window.screen.height/h;
+    if (rat_w >= 1 || rat_h >= 1) return 1; // don't zoom in
+    return rat_w > rat_h ? rat_w : rat_h; // keep screen filled
+  }
   return (<>
-    <Uploader addImgs={(ls:string[]) => updateImgs(imgs
-      .concat(ls.map((url,ind) => ({
-          src: url, alt: imgs.length+ind,
-          scale: 1, left: 0, top: 0, rotate: 0, mirror: false
-      })))
-    )}/>
+    <Uploader addImgs={(ls:string[]) => {
+      Promise.all(ls.map(url => new Promise((res,rej) => {
+        const img = new Image();
+        img.onload = () => res({
+          scale: calcScale(img.naturalWidth, img.naturalHeight),
+          src: url,
+        });
+        img.onerror = e => rej(e);
+        img.src = url
+      }))).then(ls => updateImgs(imgs
+        .concat(ls.map(({src,scale},ind) => ({
+          src, alt: imgs.length+ind, scale,
+          left: 0, top: 0, rotate: 0, mirror: false
+        }))) // TODO: fix left/top here
+    ))}}/>
     <UploadAll setImgs={replaceImgs} setName={setName}/>
     {imgs.length>0 && (()=>(<>
       <IconButtonSimple icon={<CollectionsIcon/>}
