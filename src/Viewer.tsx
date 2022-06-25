@@ -28,7 +28,6 @@ interface ToolbarConfig { // private from react-viewer/ViewerProps
 
 //const logAndRet = (v:any) => {console.log(v); return v}
 
-const Blank = (props: any) => <></>
 // additional toolbar buttons.
 const IconLocal = ({type}: {type:string}) => { // cribbed from react-viewer/Icon.tsx
   const pfx = 'react-viewer-icon'
@@ -36,7 +35,7 @@ const IconLocal = ({type}: {type:string}) => { // cribbed from react-viewer/Icon
     type === 'trash' ? DeleteIcon :
     type === 'shiftimg_left' ? KeyboardArrowLeftIcon :
     type === 'shiftimg_right' ? KeyboardArrowRightIcon :
-    Blank;
+    () => <></>;
   return <i className={`${pfx} ${pfx}-${type}`}>
     <Comp fontSize="small" style={{
       position: 'relative', top: '4px'
@@ -270,7 +269,7 @@ const ViewerSession = ({sess,goBack}: {
       </div>
       <div style={{clear:'both', float:'right'}}>
         <FormControlLabel label="Focused" control={
-          <Switch checked={focused} disabled={state.imgs.length===0} onChange={e => {
+          <Switch checked={focused} disabled={state.imgs.length===0} onChange={() => {
             setActiveIndex(0);
             setFocused(!focused);
           }}/>
