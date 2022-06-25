@@ -15,9 +15,12 @@ export const isTauri = () => (
   '__TAURI__' in window
 ) // TODO: find the correct way to check for Tauri
 
-export const IconButtonSimple = ({icon, onClick=()=>{}}:
-  {icon:ReactElement, onClick?:(e:any)=>void}) => (
-  <IconButton color="primary" component="span" onClick={onClick}>
+export const IconButtonSimple = ({icon, onClick=()=>{}, title=""}: {
+  icon: ReactElement,
+  onClick?: (e:any)=>void,
+  title?: string,
+}) => (
+  <IconButton color="primary" component="span" onClick={onClick} title={title}>
     {icon}
   </IconButton>
 )
