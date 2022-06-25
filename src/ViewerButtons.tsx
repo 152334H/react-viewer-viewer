@@ -143,17 +143,20 @@ export const ViewerButtons: FC<VBProps> = (
     <Uploader addImgs={(ls:string[]) => {
       Promise.all(ls.map(url => new Promise((res,rej) => {
         const img = new Image();
-        img.onload = () => res({
-          scale: calcScale(img.naturalWidth, img.naturalHeight),
-          src: url,
-        });
+        img.onload = () => {
+          const [w,h] = [img.naturalWidth, img.naturalHeight];
+          const scale = calcScale(w, h);
+          const left = -w/2+window.screen.width/2;
+          const top = -h/2+window.screen.height/2;
+          res({scale, src: url, left, top});
+        }
         img.onerror = e => rej(e);
         img.src = url
       }))).then(ls => updateImgs(imgs
-        .concat(ls.map(({src,scale},ind) => ({
-          src, alt: imgs.length+ind, scale,
-          left: 0, top: 0, rotate: 0, mirror: false
-        }))) // TODO: fix left/top here
+        .concat(ls.map(({src,scale,left,top},ind) => ({
+          src, alt: imgs.length+ind, scale, left, top,
+          rotate: 0, mirror: false
+        })))
     ))}}/>
     <UploadAll setImgs={replaceImgs} setName={setName}/>
     {imgs.length>0 && (()=>(<>
