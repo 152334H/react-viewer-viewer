@@ -34,86 +34,29 @@ import SettingsIcon from '@mui/icons-material/Settings';
 import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 // other imports
-import LF from 'localforage';
 import {ToastContainer} from 'react-toastify';
 import AwesomeDebouncePromise from 'awesome-debounce-promise';
 // imports developed / edited for project
 import ViewerSession,{SessionState} from './Viewer'
-import {Images,ReducedImages,blobToText} from './ImageState'
-import {IconButtonSimple,notifyPromise,UploadButton} from './UI'
-import {saveObjAsJSON} from './ViewerButtons'
+import {blobToText} from './ImageState'
+import {IconButtonSimple,UploadButton} from './UI'
+import {listSessions, rmSession, getSession, setSession, SessionStub, dumpSessions, pushSessions} from './Api'
 
-interface StoredSession extends Omit<SessionState,'imgs' | 'flattened'> {
-  imgs_r: ReducedImages;
-  flattened_r: ReducedImages | null;
-}
-
-async function loadSessionsSilent(compSessions: StoredSession[]) {
-  if (compSessions === null) return [];
-  const sessions = await Promise.all(compSessions.map(async (sess) => {
-    const imgs = await ReducedImages.fromObj(sess.imgs_r).intoImgs();
-    const flattened = sess.flattened_r ? await ReducedImages.fromObj(sess.flattened_r).intoImgs() : null;
-    const {imgs_r, flattened_r, ...rest} = sess;
-    return {...rest, imgs, flattened};
-  }));
-  return sessions;
-}
-
-function loadSessions() {
-  const p = LF.getItem('sessions').then(loadSessionsSilent);
-  notifyPromise(p, 'loading saved sessions...');
-  return p
-}
-
-async function saveSessionSilent(sessions: SessionState[], type: 'Blob' | 'B64') {
-  const meth = (r: ReducedImages) => (
-    type === 'Blob' ? r.intoBlobs() :
-                      r.intoB64()
-  );
-  const reduce = (imgs: Images) => meth(new ReducedImages(imgs))
-  return await Promise.all(sessions.map(async s => {
-    const {imgs, flattened, ...rest} = s;
-    return {
-      ...rest, imgs_r: await reduce(imgs),
-      flattened_r: flattened ? await reduce(flattened) : null
-    }
-  }));
-}
-
-function saveSessions(sessions: SessionState[]) {
-  const p = saveSessionSilent(sessions, "Blob")
-    .then(res => LF.setItem('sessions', res));
-  notifyPromise(p, 'saving sessions...');
-  return p
-}
-
-const SaveSessionsButton = ({sessions}: {
-  sessions: SessionState[]
-}) => (<IconButtonSimple icon={<DownloadIcon/>}
-  onClick={() =>
-    saveSessionSilent(sessions, 'B64')
-      .then(savedSess => saveObjAsJSON(
-        savedSess, `sessions-${Date.now()}`
-      ))
-  }
+const SaveSessionsButton = () => (
+  <IconButtonSimple icon={<DownloadIcon/>}
+    onClick={dumpSessions}
 />)
 
 const LoadSessionsButton = ({setSessions}: {
-  setSessions: (s: SessionState[]) => void
+  setSessions: (s: SessionStub[]) => void
 }) => (<UploadButton icon={<UploadIcon/>}
   onChange={(e) => {
     const f: File = e.target.files[0];
     blobToText(f).then((s: string) => {
-      const sessions: StoredSession[] = JSON.parse(s);
-      return loadSessionsSilent(sessions)
+      return pushSessions(JSON.parse(s));
     }).then(setSessions)
   }} id="icon-button-load-all-sessions"
 />)
-
-const sessionFromImages = (imgs: Images): SessionState => ({
-  imgs, flattened: null, show: false,
-  name: `session-${Date.now()}`, activeIndex: 0
-});
 
 const Settings = ({open,onClose,syncURL,setSyncURL}: {
   open: boolean,
@@ -160,8 +103,8 @@ const commitSyncURL = AwesomeDebouncePromise(
   (s: string) => localStorage.setItem('syncURL', s),
 500); // this CANNOT be defined in MainMenu, because re-rendering will redefine the function && break debouncing
 const MainMenu = ({sessions,select,setSessions}: {
-  sessions: SessionState[],
-  setSessions: (ss: SessionState[]) => void,
+  sessions: SessionStub[],
+  setSessions: (ss: SessionStub[]) => void,
   select: (i: null|number, rm?: boolean) => void
 }) => {
   const [showSettings, setShowSettings] = React.useState(false);
@@ -179,7 +122,7 @@ const MainMenu = ({sessions,select,setSessions}: {
     <Settings open={showSettings} onClose={() => setShowSettings(false)}
       syncURL={syncURL} setSyncURL={changeSyncURL} />
     <LoadSessionsButton setSessions={setSessions}/>
-    <SaveSessionsButton sessions={sessions}/>
+    <SaveSessionsButton/>
     <IconButtonSimple icon={<AddIcon/>} onClick={() => select(null)}/>
     {sessions.length>0 && <div><List sx={{maxWidth: 400}}>
       {sessions.map((sess,i) =>
@@ -200,47 +143,37 @@ const MainMenu = ({sessions,select,setSessions}: {
 }
 
 const RealApp = () => {
-  const [menu,setMenu] = React.useState('main');
-  const [vind,setVind] = React.useState(null);
-  const [sessions,setSessions] = React.useState<SessionState[]>([]);
+  type CurrentSession = null|{sess: SessionState, i: number};
+  const [sessions,setSessions] = React.useState<SessionStub[]>([]);
+  const [current,setCurrent] = React.useState<CurrentSession>(null);
 
-  React.useEffect(() => {loadSessions().then(setSessions);}, []);
+  // TODO: stop using reload
+  const reload = () => {listSessions().then(setSessions);}
+  React.useEffect(reload, []);
 
-  const setSaveSessions = (sessions: SessionState[]) => {
-    setSessions(sessions);
-    saveSessions(sessions); // this will async
-  }
-  return (<> {menu === 'main' ?
+  return (<> {current === null ?
     <MainMenu select={(i,rm=false) => {
       if (i === null) {
         i = sessions.length;
-        // don't bother writing this blank session to localstorage
-        setSessions(sessions.concat(sessionFromImages([])));
+        /* don't bother writing this blank session to localstorage */
       }
       if (rm) {
-        setSaveSessions(sessions
-          .slice(0,i).concat(sessions.slice(i+1))
-        );
+        rmSession(i).then(reload);
       } else {
-        setVind(i);
-        setMenu('viewer');
+        getSession(i).then(sess => setCurrent({sess,i}));
       }
     }} sessions={sessions} setSessions={setSessions}/> :
-    <ViewerSession sess={sessions[vind]}
+    <ViewerSession sess={current.sess}
       goBack={sess => {
         if (sess.imgs.length) {
-          const newSessions = sessions.slice();
-          newSessions[vind] = sess;
-          setSaveSessions(newSessions);
-          setMenu('main');
+          setSession(current.i, sess).then(reload);
         } else {
           // we don't know whether this was a blank unsaved session,
           // or an older saved-but-now-deleted session,
           // so just push a db save
-          setSaveSessions(sessions.slice(0,vind).concat(
-            sessions.slice(vind+1)))
-          setMenu('main');
+          rmSession(current.i).then(reload);
         }
+        setCurrent(null);
       }}
     />
   }</>);
