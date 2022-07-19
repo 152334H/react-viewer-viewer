@@ -40,8 +40,9 @@ import ViewerSession,{SessionState} from './Viewer'
 import {Images} from './ImageState'
 import {IconButtonSimple,UploadButton} from './UI'
 import {SessionAPI} from './Api';
-import {IconButton, InputAdornment} from '@mui/material';
+import {IconButton, InputAdornment, TextField} from '@mui/material';
 import {Visibility, VisibilityOff} from '@mui/icons-material';
+import AwesomeDebouncePromise from 'awesome-debounce-promise';
 
 const SaveSessionsButton = ({save}: {
   save: () => void,
@@ -166,18 +167,12 @@ const RealApp = ({api,logout}: {
   }</>);
 }
 
-/*
-const commitSyncURL = AwesomeDebouncePromise(
-  (s: string) => localStorage.setItem('syncURL', s),
-500); // this CANNOT be defined in MainMenu, because re-rendering will redefine the function && break debouncing
- */
 const Login = ({initialURL,login}: {
   initialURL: string,
   login: (url: string, pw: string) => void,
 }) => {
-  const [syncURL,setSyncURL] = React.useState(initialURL);
-  const [syncPW, setSyncPW] = React.useState("");
-  const [showPW, setShowPW] = React.useState(false);
+  const [showPW, setShowPW] = React.useState(false)
+  const [badURL, setBadURL] = React.useState(false)
 
   const style = {
     position: 'absolute',
@@ -190,32 +185,42 @@ const Login = ({initialURL,login}: {
     width: 350,
   }
   return <Box sx={style}>
-      Sync images to <span style={{color: 'grey'}}>(empty means no sync)</span>:<br></br>
-      <InputBase placeholder="https://.../api" value={syncURL} fullWidth={true}
-        onChange={(e:any) => setSyncURL(e.target.value)} sx={{
-          borderLeft: '8px solid #111',
-          borderBottom: '1px solid #555'
-      }}/>
-      <InputBase type={showPW ? 'text' : 'password'}
-        placeholder="hunter2" fullWidth={true}
-        value={syncPW} onChange={(e:any) =>
-          setSyncPW(e.target.value)
-        } sx={{
-          borderLeft: '8px solid #111',
-          borderBottom: '1px solid #555'
-        }} endAdornment={
-          <InputAdornment position="end">
+    <form onSubmit={e => {
+      e.preventDefault();
+      const f = e.target as any;
+      login(f.url.value, f.password.value)
+    }}>
+      Sync images to <span style={{color: 'grey'}}>(empty means no sync)</span>:<p></p>
+      <TextField placeholder="https://.../api"
+        label="URL" color="secondary" focused
+        fullWidth={true} name="url" error={badURL}
+        helperText={badURL ? 'Invalid API URL' : undefined}
+        type='url' defaultValue={initialURL}
+        onChange={e => {
+          const url = e.target.value;
+          setBadURL(!(url === '' || /^https?:\/\/.*\/api$/.test(url)))
+        }}
+      />
+      <p></p>
+      <TextField placeholder="hunter2" type={
+          showPW ? 'text' : 'password'
+        } label="password" color="primary" focused
+        fullWidth={true} name="password"
+        InputProps={{
+          endAdornment: <InputAdornment position="end">
             <IconButton color="primary"
               component="span" onClick={() =>
                 setShowPW(!showPW)
-            }/>
-            {showPW ? <Visibility/> : <VisibilityOff/>}
-            <IconButton/>
+            }>
+            { showPW ? <Visibility/> : <VisibilityOff/> }
+            </IconButton>
           </InputAdornment>
-        }/>
-    <IconButtonSimple icon={<LoginIcon/>} onClick={
-      () => login(syncURL, syncPW)
-    }/>
+        }}
+      />
+      <IconButton color="primary" type="submit">
+        <LoginIcon/>
+      </IconButton>
+    </form>
   </Box>
 }
 
@@ -236,7 +241,8 @@ const Prelude = () => {
             const d = url ? {url,pw} : undefined;
             const p = new SessionAPI(d) as unknown;
             setAPI(await p as Promise<SessionAPI>);
-          })().catch(setErr); // TODO: prettify
+          })().then(() => setErr(undefined))
+          .catch(setErr); // TODO: prettify
       }}/>
       {err ? <p>{`${err}`}</p> : <></>}
     </>
