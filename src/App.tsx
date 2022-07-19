@@ -41,6 +41,8 @@ import ViewerSession,{SessionState} from './Viewer'
 import {Images} from './ImageState'
 import {IconButtonSimple,UploadButton} from './UI'
 import {SessionAPI} from './Api';
+import {IconButton, Input, InputAdornment} from '@mui/material';
+import {Visibility, VisibilityOff} from '@mui/icons-material';
 
 const SaveSessionsButton = ({save}: {
   save: () => void,
@@ -63,12 +65,15 @@ const sessionFromImages = (imgs: Images): SessionState => ({
   imgs, name: `session-${Date.now()}`, activeIndex: 0
 });
 
-const Settings = ({open,onClose,syncURL,setSyncURL}: {
+const Settings = ({open,onClose,syncURL,setSyncURL,syncPW, setSyncPW}: {
   open: boolean,
   onClose: () => void,
   syncURL: string,
   setSyncURL: (s: string) => void,
+  syncPW: string,
+  setSyncPW: (s: string) => void,
 }) => {
+  const [showPW, setShowPW] = React.useState(false);
   const style = {
     position: 'absolute',
     top: '50%', left: '50%',
@@ -87,7 +92,7 @@ const Settings = ({open,onClose,syncURL,setSyncURL}: {
   >
     <Box sx={style}>
       Sync images to <span style={{color: 'grey'}}>(empty means no sync)</span>:<br></br>
-      <InputBase placeholder="https://..." value={syncURL} fullWidth={true}
+      <InputBase placeholder="https://.../api" value={syncURL} fullWidth={true}
         onChange={(e:any) => setSyncURL(e.target.value)} sx={{
           borderLeft: '8px solid #111',
           borderBottom: '1px solid #555'
@@ -100,6 +105,20 @@ const Settings = ({open,onClose,syncURL,setSyncURL}: {
           alert("TODO: implement this");
         }} title="pull images from remote"/>
       </>)}
+      <Input type={showPW ? 'text' : 'password'}
+        placeholder="hunter2" fullWidth={true}
+        value={syncPW} onChange={(e:any) =>
+          setSyncPW(e.target.value)
+        } endAdornment={
+          <InputAdornment position="end">
+            <IconButton color="primary"
+              component="span" onClick={(e:any) =>
+                setShowPW(!showPW)
+            }/>
+            {showPW ? <Visibility/> : <VisibilityOff/>}
+            <IconButton/>
+          </InputAdornment>
+        }/>
     </Box>
   </Modal>)
 }
@@ -117,6 +136,7 @@ const MainMenu = ({sessions,create,select,remove,load,save}: {
 }) => {
   const [showSettings, setShowSettings] = React.useState(false);
   const [syncURL,setSyncURL] = React.useState("");
+  const [syncPW, setSyncPW] = React.useState("");
   React.useEffect(() => setSyncURL(localStorage.getItem('syncURL')), []);
   const changeSyncURL = (s: string) => {
     setSyncURL(s);
@@ -128,7 +148,9 @@ const MainMenu = ({sessions,create,select,remove,load,save}: {
         onClick={()=>setShowSettings(true)} />
     </div>
     <Settings open={showSettings} onClose={() => setShowSettings(false)}
-      syncURL={syncURL} setSyncURL={changeSyncURL} />
+      syncURL={syncURL} setSyncURL={changeSyncURL} 
+      syncPW={syncPW} setSyncPW={setSyncPW}
+    />
     <LoadSessionsButton load={load}/>
     <SaveSessionsButton save={save}/>
     <IconButtonSimple icon={<AddIcon/>} onClick={create}/>
