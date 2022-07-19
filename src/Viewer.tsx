@@ -138,6 +138,7 @@ export interface ImagesState {
 export interface SessionState extends ImagesState {
   flattened: null|Images;
   name: string;
+  id?: string;
 }
 
 type ImagesStateCmd = {
@@ -227,7 +228,7 @@ const ViewerSession = ({sess,goBack}: {
 }) => {
   const [name, setName] = React.useState(sess.name);
   const [state, dispatch] = React.useReducer(sessReducer, {
-    show: sess.show, activeIndex: sess.activeIndex, imgs: sess.imgs
+    show: false, activeIndex: sess.activeIndex, imgs: sess.imgs
   });
   const [manualUpdate, setManualUpdate] = React.useState(0);
   if (state.show === false && manualUpdate !== 0) { setManualUpdate(0); }

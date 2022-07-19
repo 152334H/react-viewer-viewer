@@ -34,67 +34,27 @@ import SettingsIcon from '@mui/icons-material/Settings';
 import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 // other imports
-import LF from 'localforage';
 import {ToastContainer} from 'react-toastify';
 import AwesomeDebouncePromise from 'awesome-debounce-promise';
 // imports developed / edited for project
 import ViewerSession,{SessionState} from './Viewer'
-import {Images,ReducedImages,blobToText} from './ImageState'
-import {IconButtonSimple,notifyPromise,UploadButton} from './UI'
-import {saveObjAsJSON} from './ViewerButtons'
+import {Images} from './ImageState'
+import {IconButtonSimple,UploadButton} from './UI'
+import {SessionAPI} from './Api';
 
-interface StoredSession extends Omit<SessionState,'imgs' | 'flattened'> {
-  imgs_r: ReducedImages;
-  flattened_r: ReducedImages | null;
-}
-
-async function loadSessionsSilent(compSessions: StoredSession[]) {
-  if (compSessions === null) return [];
-  const sessions = await Promise.all(compSessions.map(async (sess) => {
-    const imgs = await ReducedImages.fromObj(sess.imgs_r).intoImgs();
-    const flattened = sess.flattened_r ? await ReducedImages.fromObj(sess.flattened_r).intoImgs() : null;
-    const {imgs_r, flattened_r, ...rest} = sess;
-    return {...rest, imgs, flattened};
-  }));
-  return sessions;
-}
-
-function loadSessions() {
-  const p = LF.getItem('sessions').then(loadSessionsSilent);
-  notifyPromise(p, 'loading saved sessions...');
-  return p
-}
-
-async function saveSessionSilent(sessions: SessionState[], type: 'Blob' | 'B64') {
-  const meth = (r: ReducedImages) => (
-    type === 'Blob' ? r.intoBlobs() :
-                      r.intoB64()
-  );
-  const reduce = (imgs: Images) => meth(new ReducedImages(imgs))
-  return await Promise.all(sessions.map(async s => {
-    const {imgs, flattened, ...rest} = s;
-    return {
-      ...rest, imgs_r: await reduce(imgs),
-      flattened_r: flattened ? await reduce(flattened) : null
-    }
-  }));
-}
-
-function saveSessions(sessions: SessionState[]) {
-  const p = saveSessionSilent(sessions, "Blob")
-    .then(res => LF.setItem('sessions', res));
-  notifyPromise(p, 'saving sessions...');
-  return p
-}
-
+/*
 const SaveSessionsButton = ({sessions}: {
   sessions: SessionState[]
 }) => (<IconButtonSimple icon={<DownloadIcon/>}
-  onClick={() =>
+  onClick={() => {
+    alert("TODO: implement this")
+    /*
     saveSessionSilent(sessions, 'B64')
       .then(savedSess => saveObjAsJSON(
         savedSess, `sessions-${Date.now()}`
       ))
+     * /
+    }
   }
 />)
 
@@ -102,14 +62,18 @@ const LoadSessionsButton = ({setSessions}: {
   setSessions: (s: SessionState[]) => void
 }) => (<UploadButton icon={<UploadIcon/>}
   onChange={(e) => {
+    alert("TODO: implement this"); /*
     const f: File = e.target.files[0];
     blobToText(f).then((s: string) => {
       const sessions: StoredSession[] = JSON.parse(s);
       return loadSessionsSilent(sessions)
     }).then(setSessions)
+    * /
   }} id="icon-button-load-all-sessions"
 />)
+*/
 
+//TODO: get rid of flattened and show
 const sessionFromImages = (imgs: Images): SessionState => ({
   imgs, flattened: null, show: false,
   name: `session-${Date.now()}`, activeIndex: 0
@@ -159,10 +123,11 @@ const Settings = ({open,onClose,syncURL,setSyncURL}: {
 const commitSyncURL = AwesomeDebouncePromise(
   (s: string) => localStorage.setItem('syncURL', s),
 500); // this CANNOT be defined in MainMenu, because re-rendering will redefine the function && break debouncing
-const MainMenu = ({sessions,select,setSessions}: {
+const MainMenu = ({sessions,create,select,remove}: {
   sessions: SessionState[],
-  setSessions: (ss: SessionState[]) => void,
-  select: (i: null|number, rm?: boolean) => void
+  create: () => void,
+  select: (i: number) => void,
+  remove: (i: number) => void,
 }) => {
   const [showSettings, setShowSettings] = React.useState(false);
   const [syncURL,setSyncURL] = React.useState("");
@@ -178,16 +143,18 @@ const MainMenu = ({sessions,select,setSessions}: {
     </div>
     <Settings open={showSettings} onClose={() => setShowSettings(false)}
       syncURL={syncURL} setSyncURL={changeSyncURL} />
+    {/* TODO: figure out what to do with these 
     <LoadSessionsButton setSessions={setSessions}/>
     <SaveSessionsButton sessions={sessions}/>
-    <IconButtonSimple icon={<AddIcon/>} onClick={() => select(null)}/>
+      */}
+    <IconButtonSimple icon={<AddIcon/>} onClick={create}/>
     {sessions.length>0 && <div><List sx={{maxWidth: 400}}>
       {sessions.map((sess,i) =>
       <ListItem key={i} onClick={() => select(i)}
         secondaryAction={<IconButtonSimple
           icon={<DeleteIcon/>} onClick={(e) => {
             e.stopPropagation()
-            select(i,true)
+            remove(i)
           }}
         />}
       >
@@ -199,51 +166,50 @@ const MainMenu = ({sessions,select,setSessions}: {
   </>)
 }
 
-const RealApp = () => {
-  const [menu,setMenu] = React.useState('main');
-  const [vind,setVind] = React.useState(null);
-  const [sessions,setSessions] = React.useState<SessionState[]>([]);
-
-  React.useEffect(() => {loadSessions().then(setSessions);}, []);
-
-  const setSaveSessions = (sessions: SessionState[]) => {
-    setSessions(sessions);
-    saveSessions(sessions); // this will async
-  }
-  return (<> {menu === 'main' ?
-    <MainMenu select={(i,rm=false) => {
-      if (i === null) {
-        i = sessions.length;
-        // don't bother writing this blank session to localstorage
-        setSessions(sessions.concat(sessionFromImages([])));
-      }
-      if (rm) {
-        setSaveSessions(sessions
-          .slice(0,i).concat(sessions.slice(i+1))
-        );
-      } else {
+const RealApp = ({api}: {
+  api: SessionAPI,
+}) => {
+  const [{vind,sessions}, setSess] = React.useState({vind: null, sessions: api.sessions})
+  const setVind = (vind: number) => setSess({sessions, vind})
+  const setSessions = (sessions: SessionState[]) => setSess({vind, sessions})
+ 
+  return (<> {vind === null ?
+    <MainMenu create={() => {
+        api.append(sessionFromImages([]));
+        setVind(api.sessions.length-1)
+    }} select={(i) => {
         setVind(i);
-        setMenu('viewer');
-      }
-    }} sessions={sessions} setSessions={setSessions}/> :
-    <ViewerSession sess={sessions[vind]}
+    }} remove={(i) => {
+        api.remove(i);
+        setSessions(api.sessions.slice())
+    }}
+    sessions={sessions}/> :
+    <ViewerSession sess={api.sessions[vind]}
       goBack={sess => {
         if (sess.imgs.length) {
-          const newSessions = sessions.slice();
-          newSessions[vind] = sess;
-          setSaveSessions(newSessions);
-          setMenu('main');
-        } else {
-          // we don't know whether this was a blank unsaved session,
-          // or an older saved-but-now-deleted session,
-          // so just push a db save
-          setSaveSessions(sessions.slice(0,vind).concat(
-            sessions.slice(vind+1)))
-          setMenu('main');
+          api.edit(vind, sess);
+        } else { // this is a deletion
+          api.remove(vind);
         }
+        setSess({sessions: api.sessions.slice(),
+                  vind: null})
       }}
     />
   }</>);
+}
+
+const Prelude = () => {
+  const [api, setAPI] = React.useState(undefined);
+
+  React.useEffect(() => {
+    (async () => {
+      const api = await (new SessionAPI() as unknown as Promise<SessionAPI>);
+      setAPI(api);
+    })();
+  }, []);
+
+  if (api) return <RealApp api={api}/>
+  return <p>loading...</p>
 }
 
 const App = () => (<>
@@ -251,7 +217,7 @@ const App = () => (<>
     palette: { mode : 'dark' }
   })}>
     <CssBaseline/>
-    <RealApp/>
+    <Prelude/>
   </ThemeProvider>
   <ToastContainer position="top-right"
     autoClose={1000}
