@@ -12,6 +12,7 @@
     "@testing-library/react": "^12.1.2",
     "@testing-library/user-event": "^13.5.0",
     "awesome-debounce-promise": "^2.1.0",
+    "axios": "^0.27.2",
     "file-saver": "^2.0.5",
     "localforage": "^1.10.0",
     "react": "^17.0.2",
