@@ -135,8 +135,7 @@ export interface ImagesState {
   imgs: Images;
   activeIndex: number;
 };
-export interface SessionState extends ImagesState {
-  flattened: null|Images;
+export interface SessionState extends Omit<ImagesState, 'show'> {
   name: string;
   id?: string;
 }
@@ -263,10 +262,10 @@ const ViewerSession = ({sess,goBack}: {
       <div style={{float:'right'}}>
         <IconButtonSimple icon={<DeleteIcon/>}
         onClick={()=>window.confirm(`Delete the "${name}" session?`)
-          ? goBack({...state, imgs: [], flattened: null, name})
+          ? goBack({activeIndex: state.activeIndex, imgs: [], name})
           : 0}/>
         <IconButtonSimple icon={<KeyboardReturnIcon/>}
-        onClick={()=>goBack({...state, flattened: null, name})}/>
+          onClick={()=>goBack({activeIndex: state.activeIndex, imgs: state.imgs, name})}/>
       </div>
       <div style={{clear:'both', float:'right'}}>
         <FormControlLabel label="Focused" control={

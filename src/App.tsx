@@ -42,41 +42,25 @@ import {Images} from './ImageState'
 import {IconButtonSimple,UploadButton} from './UI'
 import {SessionAPI} from './Api';
 
-/*
-const SaveSessionsButton = ({sessions}: {
-  sessions: SessionState[]
+const SaveSessionsButton = ({save}: {
+  save: () => void,
 }) => (<IconButtonSimple icon={<DownloadIcon/>}
   onClick={() => {
-    alert("TODO: implement this")
-    /*
-    saveSessionSilent(sessions, 'B64')
-      .then(savedSess => saveObjAsJSON(
-        savedSess, `sessions-${Date.now()}`
-      ))
-     * /
-    }
-  }
+    save()
+  }}
 />)
 
-const LoadSessionsButton = ({setSessions}: {
-  setSessions: (s: SessionState[]) => void
+const LoadSessionsButton = ({load}: {
+  load: (f: File) => void,
 }) => (<UploadButton icon={<UploadIcon/>}
   onChange={(e) => {
-    alert("TODO: implement this"); /*
     const f: File = e.target.files[0];
-    blobToText(f).then((s: string) => {
-      const sessions: StoredSession[] = JSON.parse(s);
-      return loadSessionsSilent(sessions)
-    }).then(setSessions)
-    * /
+    load(f);
   }} id="icon-button-load-all-sessions"
 />)
-*/
 
-//TODO: get rid of flattened and show
 const sessionFromImages = (imgs: Images): SessionState => ({
-  imgs, flattened: null, show: false,
-  name: `session-${Date.now()}`, activeIndex: 0
+  imgs, name: `session-${Date.now()}`, activeIndex: 0
 });
 
 const Settings = ({open,onClose,syncURL,setSyncURL}: {
@@ -123,11 +107,13 @@ const Settings = ({open,onClose,syncURL,setSyncURL}: {
 const commitSyncURL = AwesomeDebouncePromise(
   (s: string) => localStorage.setItem('syncURL', s),
 500); // this CANNOT be defined in MainMenu, because re-rendering will redefine the function && break debouncing
-const MainMenu = ({sessions,create,select,remove}: {
+const MainMenu = ({sessions,create,select,remove,load,save}: {
   sessions: SessionState[],
   create: () => void,
   select: (i: number) => void,
   remove: (i: number) => void,
+  load: (f: File)  => void,
+  save: () => void,
 }) => {
   const [showSettings, setShowSettings] = React.useState(false);
   const [syncURL,setSyncURL] = React.useState("");
@@ -143,10 +129,8 @@ const MainMenu = ({sessions,create,select,remove}: {
     </div>
     <Settings open={showSettings} onClose={() => setShowSettings(false)}
       syncURL={syncURL} setSyncURL={changeSyncURL} />
-    {/* TODO: figure out what to do with these 
-    <LoadSessionsButton setSessions={setSessions}/>
-    <SaveSessionsButton sessions={sessions}/>
-      */}
+    <LoadSessionsButton load={load}/>
+    <SaveSessionsButton save={save}/>
     <IconButtonSimple icon={<AddIcon/>} onClick={create}/>
     {sessions.length>0 && <div><List sx={{maxWidth: 400}}>
       {sessions.map((sess,i) =>
@@ -182,7 +166,11 @@ const RealApp = ({api}: {
     }} remove={(i) => {
         api.remove(i);
         setSessions(api.sessions.slice())
-    }}
+    }} load={(f: File) => {
+        api.import(f).then(
+          () => setSessions(api.sessions.slice())
+        )
+    }} save={() => api.export()}
     sessions={sessions}/> :
     <ViewerSession sess={api.sessions[vind]}
       goBack={sess => {

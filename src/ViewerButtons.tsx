@@ -71,6 +71,7 @@ const SaveAll = ({imgs,name}: {imgs:Images,name:string}) => {
   return <IconButtonSimple icon={<DownloadIcon/>} onClick={saveAll}/>
 }
 
+/* TODO: decide to get rid of this
 export const flattenImages = async (imgs:Images) => {
   const compImgs = await new ReducedImages(imgs).intoB64();
   const flattened = await invoke('flatten_images', {
@@ -84,6 +85,7 @@ export const flattenImages = async (imgs:Images) => {
          scale: 1, left: 0, top: 0, rotate: 0
     }));
 }
+ */
 
 const zipImages = async (imgs:Images) => {
   // this will be really slow!

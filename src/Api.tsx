@@ -1,7 +1,8 @@
 import LF from 'localforage';
-import {blobToOURL, Images, ReducedImages} from './ImageState';
+import {blobToOURL, blobToText, Images, ReducedImages} from './ImageState';
 import {notifyPromise} from './UI';
 import {SessionState} from './Viewer'
+import {saveObjAsJSON} from './ViewerButtons';
 
 
 class SessionAPI {
@@ -40,6 +41,23 @@ class SessionAPI {
       return saveSessions(this.sessions);
     }
   }
+  async export() {
+    const savedSess = await saveSessionSilent(this.sessions, 'B64');
+    return saveObjAsJSON(
+      savedSess, `sessions-${Date.now()}`
+    );
+  }
+  // can be double-awaited to wait for saving
+  async import(f: File) {
+    const stored: StoredSession[] = JSON
+      .parse(await blobToText(f));
+    this.sessions = await loadSessionsSilent(stored)
+    //
+    if (this.url) throw Error("TODO")
+    else {
+      return saveSessions(this.sessions);
+    }
+  }
   // end weird functions
   async upload_image(f: File) {
     if (this.url) throw Error("TODO")
@@ -47,18 +65,16 @@ class SessionAPI {
   }
 }
 
-interface StoredSession extends Omit<SessionState,'imgs' | 'flattened'> {
+interface StoredSession extends Omit<SessionState,'imgs'> {
   imgs_r: ReducedImages;
-  flattened_r: ReducedImages | null;
 }
 
 async function loadSessionsSilent(compSessions: StoredSession[]) {
   if (compSessions === null) return [];
   const sessions = await Promise.all(compSessions.map(async (sess) => {
     const imgs = await ReducedImages.fromObj(sess.imgs_r).intoImgs();
-    const flattened = sess.flattened_r ? await ReducedImages.fromObj(sess.flattened_r).intoImgs() : null;
-    const {imgs_r, flattened_r, ...rest} = sess;
-    return {...rest, imgs, flattened};
+    const {imgs_r, ...rest} = sess;
+    return {...rest, imgs};
   }));
   return sessions;
 }
@@ -76,13 +92,13 @@ async function saveSessionSilent(sessions: SessionState[], type: 'Blob' | 'B64')
   );
   const reduce = (imgs: Images) => meth(new ReducedImages(imgs))
   return await Promise.all(sessions.map(async s => {
-    const {imgs, flattened, ...rest} = s;
+    const {imgs, ...rest} = s;
     return {
       ...rest, imgs_r: await reduce(imgs),
-      flattened_r: flattened ? await reduce(flattened) : null
     }
   }));
 }
+
 
 function saveSessions(sessions: SessionState[]) {
   const p = saveSessionSilent(sessions, "Blob")
