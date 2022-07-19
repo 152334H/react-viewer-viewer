@@ -31,17 +31,16 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import DownloadIcon from '@mui/icons-material/Download';
 import UploadIcon from '@mui/icons-material/Upload';
 import SettingsIcon from '@mui/icons-material/Settings';
-import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
-import CloudUploadIcon from '@mui/icons-material/CloudUpload';
+import LoginIcon from '@mui/icons-material/Login';
+import LogoutIcon from '@mui/icons-material/Logout';
 // other imports
 import {ToastContainer} from 'react-toastify';
-import AwesomeDebouncePromise from 'awesome-debounce-promise';
 // imports developed / edited for project
 import ViewerSession,{SessionState} from './Viewer'
 import {Images} from './ImageState'
 import {IconButtonSimple,UploadButton} from './UI'
 import {SessionAPI} from './Api';
-import {IconButton, Input, InputAdornment} from '@mui/material';
+import {IconButton, InputAdornment} from '@mui/material';
 import {Visibility, VisibilityOff} from '@mui/icons-material';
 
 const SaveSessionsButton = ({save}: {
@@ -65,15 +64,10 @@ const sessionFromImages = (imgs: Images): SessionState => ({
   imgs, name: `session-${Date.now()}`, activeIndex: 0
 });
 
-const Settings = ({open,onClose,syncURL,setSyncURL,syncPW, setSyncPW}: {
+const Settings = ({open,onClose}: {
   open: boolean,
   onClose: () => void,
-  syncURL: string,
-  setSyncURL: (s: string) => void,
-  syncPW: string,
-  setSyncPW: (s: string) => void,
 }) => {
-  const [showPW, setShowPW] = React.useState(false);
   const style = {
     position: 'absolute',
     top: '50%', left: '50%',
@@ -91,43 +85,14 @@ const Settings = ({open,onClose,syncURL,setSyncURL,syncPW, setSyncPW}: {
     aria-describedby="modal-settings"
   >
     <Box sx={style}>
-      Sync images to <span style={{color: 'grey'}}>(empty means no sync)</span>:<br></br>
-      <InputBase placeholder="https://.../api" value={syncURL} fullWidth={true}
-        onChange={(e:any) => setSyncURL(e.target.value)} sx={{
-          borderLeft: '8px solid #111',
-          borderBottom: '1px solid #555'
-      }}/>
-      {syncURL && (<>
-        <IconButtonSimple icon={<CloudUploadIcon/>} onClick={() => {
-          alert("TODO: implement this");
-        }} title="push images to remote"/>
-        <IconButtonSimple icon={<CloudDownloadIcon/>} onClick={() => {
-          alert("TODO: implement this");
-        }} title="pull images from remote"/>
-      </>)}
-      <Input type={showPW ? 'text' : 'password'}
-        placeholder="hunter2" fullWidth={true}
-        value={syncPW} onChange={(e:any) =>
-          setSyncPW(e.target.value)
-        } endAdornment={
-          <InputAdornment position="end">
-            <IconButton color="primary"
-              component="span" onClick={(e:any) =>
-                setShowPW(!showPW)
-            }/>
-            {showPW ? <Visibility/> : <VisibilityOff/>}
-            <IconButton/>
-          </InputAdornment>
-        }/>
+      There's nothing here right now...
     </Box>
   </Modal>)
 }
 
-const commitSyncURL = AwesomeDebouncePromise(
-  (s: string) => localStorage.setItem('syncURL', s),
-500); // this CANNOT be defined in MainMenu, because re-rendering will redefine the function && break debouncing
-const MainMenu = ({sessions,create,select,remove,load,save}: {
+const MainMenu = ({sessions,logout,create,select,remove,load,save}: {
   sessions: SessionState[],
+  logout: () => void,
   create: () => void,
   select: (i: number) => void,
   remove: (i: number) => void,
@@ -135,22 +100,14 @@ const MainMenu = ({sessions,create,select,remove,load,save}: {
   save: () => void,
 }) => {
   const [showSettings, setShowSettings] = React.useState(false);
-  const [syncURL,setSyncURL] = React.useState("");
-  const [syncPW, setSyncPW] = React.useState("");
-  React.useEffect(() => setSyncURL(localStorage.getItem('syncURL')), []);
-  const changeSyncURL = (s: string) => {
-    setSyncURL(s);
-    commitSyncURL(s);
-  }
   return (<>
     <div style={{float:'right'}}>
       <IconButtonSimple icon={<SettingsIcon/>}
         onClick={()=>setShowSettings(true)} />
+      <IconButtonSimple icon={<LogoutIcon/>}
+        onClick={logout} />
     </div>
-    <Settings open={showSettings} onClose={() => setShowSettings(false)}
-      syncURL={syncURL} setSyncURL={changeSyncURL} 
-      syncPW={syncPW} setSyncPW={setSyncPW}
-    />
+    <Settings open={showSettings} onClose={() => setShowSettings(false)} />
     <LoadSessionsButton load={load}/>
     <SaveSessionsButton save={save}/>
     <IconButtonSimple icon={<AddIcon/>} onClick={create}/>
@@ -172,8 +129,9 @@ const MainMenu = ({sessions,create,select,remove,load,save}: {
   </>)
 }
 
-const RealApp = ({api}: {
+const RealApp = ({api,logout}: {
   api: SessionAPI,
+  logout: () => void,
 }) => {
   const [{vind,sessions}, setSess] = React.useState({vind: null, sessions: api.sessions})
   const setVind = (vind: number) => setSess({sessions, vind})
@@ -192,7 +150,7 @@ const RealApp = ({api}: {
         api.import(f).then(
           () => setSessions(api.sessions.slice())
         )
-    }} save={() => api.export()}
+    }} save={() => api.export()} logout={logout}
     sessions={sessions}/> :
     <ViewerSession sess={api.sessions[vind]}
       goBack={sess => {
@@ -208,18 +166,80 @@ const RealApp = ({api}: {
   }</>);
 }
 
+/*
+const commitSyncURL = AwesomeDebouncePromise(
+  (s: string) => localStorage.setItem('syncURL', s),
+500); // this CANNOT be defined in MainMenu, because re-rendering will redefine the function && break debouncing
+ */
+const Login = ({initialURL,login}: {
+  initialURL: string,
+  login: (url: string, pw: string) => void,
+}) => {
+  const [syncURL,setSyncURL] = React.useState(initialURL);
+  const [syncPW, setSyncPW] = React.useState("");
+  const [showPW, setShowPW] = React.useState(false);
+
+  const style = {
+    position: 'absolute',
+    top: '50%', left: '50%',
+    transform: 'translate(-50%,-50%)',
+    bgcolor: 'background.paper',
+    border: '2px solid #fff',
+    boxShadow: 24,
+    p: 2,
+    width: 350,
+  }
+  return <Box sx={style}>
+      Sync images to <span style={{color: 'grey'}}>(empty means no sync)</span>:<br></br>
+      <InputBase placeholder="https://.../api" value={syncURL} fullWidth={true}
+        onChange={(e:any) => setSyncURL(e.target.value)} sx={{
+          borderLeft: '8px solid #111',
+          borderBottom: '1px solid #555'
+      }}/>
+      <InputBase type={showPW ? 'text' : 'password'}
+        placeholder="hunter2" fullWidth={true}
+        value={syncPW} onChange={(e:any) =>
+          setSyncPW(e.target.value)
+        } sx={{
+          borderLeft: '8px solid #111',
+          borderBottom: '1px solid #555'
+        }} endAdornment={
+          <InputAdornment position="end">
+            <IconButton color="primary"
+              component="span" onClick={() =>
+                setShowPW(!showPW)
+            }/>
+            {showPW ? <Visibility/> : <VisibilityOff/>}
+            <IconButton/>
+          </InputAdornment>
+        }/>
+    <IconButtonSimple icon={<LoginIcon/>} onClick={
+      () => login(syncURL, syncPW)
+    }/>
+  </Box>
+}
+
 const Prelude = () => {
   const [api, setAPI] = React.useState(undefined);
+  const [cachedURL, setCachedURL] = React.useState(null);
+  const [err, setErr] = React.useState(undefined);
+  React.useEffect(() => setCachedURL(
+    localStorage.getItem('syncURL') || ""
+  ), []);
 
-  React.useEffect(() => {
-    (async () => {
-      const api = await (new SessionAPI() as unknown as Promise<SessionAPI>);
-      setAPI(api);
-    })();
-  }, []);
-
-  if (api) return <RealApp api={api}/>
-  return <p>loading...</p>
+  return cachedURL === null ? <>loading...</> :
+    api ? <RealApp api={api} logout={() => setAPI(undefined)}/> : <>
+      <Login initialURL={cachedURL} login={
+        (url,pw) => {
+          localStorage.setItem('syncURL', url);
+          (async () => {
+            const d = url ? {url,pw} : undefined;
+            const p = new SessionAPI(d) as unknown;
+            setAPI(await p as Promise<SessionAPI>);
+          })().catch(setErr); // TODO: prettify
+      }}/>
+      {err ? <p>{`${err}`}</p> : <></>}
+    </>
 }
 
 const App = () => (<>
