@@ -1,21 +1,25 @@
 import LF from 'localforage';
-import {blobToOURL, blobToText, Images, ReducedImages} from './ImageState';
+import {blobToOURL, blobToText, Images, ReducedImages, URLToBlob} from './ImageState';
 import {notifyPromise} from './UI';
 import {SessionState} from './Viewer'
 import {saveObjAsJSON} from './ViewerButtons';
 import axios, {AxiosInstance} from 'axios'
 
+function checkForID(s: SessionState) {
+  if (typeof s.id === 'undefined')
+    throw Error(`.id not found in ${s}!`)
+}
 class SessionAPI {
   sessions: SessionState[];
   api?: AxiosInstance;
 
   constructor(remote?: {url: string, pw: string}) {
-    return (async (): Promise<SessionAPI> => {
+    const p = (async (): Promise<SessionAPI> => {
       if (remote) {
         const res = await axios
           .post(`${remote.url}/login`, {
             password: remote.pw
-          });
+          }, {withCredentials: true});
         const {token} = res.data
         if (!token) throw Error("Could not login")
         //
@@ -25,6 +29,8 @@ class SessionAPI {
             'Authorization': `bearer ${token}`
           },
           timeout: 1000,
+          validateStatus: (stat: number) =>
+            (200 <= stat && stat < 300) || (stat === 409),
         });
         this.api.interceptors.response.use(res => {
           console.log(`got response ${res}`)
@@ -35,37 +41,89 @@ class SessionAPI {
           debugger;
           return Promise.reject(err);
         });
-        this.sessions = await this.api.get('/sessions')
+        this.sessions = (await this.api.get('/sessions')).data
       } else {
-        this.sessions = await loadSessions();
+        this.sessions = await LF.getItem('sessions').then(loadSessionsSilent);
       }
       return this
-    })() as unknown as SessionAPI;
+    })();
+    notifyPromise(p, 'loading saved sessions...');
+    return p as unknown as SessionAPI; // dumb hack for typescript
+  }
+  upload_image(f: File) {
+    if (this.api) throw Error("TODO")
+    return blobToOURL(f)
+  }
+  async upload_OURL(url: string) {
+    const b = await URLToBlob(url);
+    const formData = new FormData();
+    const name = `a.${b.type.split('/').pop()}`;
+    formData.append('img', b, name)
+    const res = await this.api.post('/images/', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      }
+    })
+    return res.data.url
+  }
+  async fixSrcs(sess: SessionState) {
+    const srcs: any = {};
+    for (const im of sess.imgs) { // intentionally do this sequentially
+      if (im.src.slice(0,5) === 'blob:') {
+        srcs[im.src] = srcs[im.src] ?? await this.upload_OURL(im.src)
+        im.src = srcs[im.src];
+      }
+    }
+    return sess;
   }
   // these functions return promises that can be either awaited or ignored.
   append(sess: SessionState) {
+    const p = this.append_(sess)
+    notifyPromise(p, 'creating session...');
+    return p;
+  }
+  async append_(sess: SessionState) {
     this.sessions.push(sess);
-    if (this.api) throw Error("TODO")
-    else {
-      return saveSessions(this.sessions);
+    if (this.api) {
+      const res = await this.api.post<{id: string;}>('/sessions', sess);
+      sess.id = res.data.id;
+      return console.log(this.sessions);
+    } else {
+      return saveSessionsSilent(this.sessions);
     }
   }
   remove(i: number) {
-    this.sessions.splice(i,1)
-    if (this.api) throw Error("TODO")
-    else {
-      return saveSessions(this.sessions);
+    const p = this.remove_(i)
+    notifyPromise(p, 'deleting session...');
+    return p;
+  }
+  remove_(i: number) {
+    const removed = this.sessions[i];
+    this.sessions.splice(i,1);
+    if (this.api) {
+      checkForID(removed);
+      return this.api.delete(`/sessions/${removed.id}`);
+    } else {
+      return saveSessionsSilent(this.sessions);
     }
   }
   edit(i: number, sess: SessionState) {
+    const p = this.edit_(i, sess);
+    notifyPromise(p, 'pushing session...');
+    return p;
+  }
+  async edit_(i: number, sess: SessionState) {
     this.sessions[i] = sess;
-    if (this.api) throw Error("TODO")
-    else {
-      return saveSessions(this.sessions);
+    if (this.api) {
+      checkForID(sess);
+      await this.fixSrcs(sess); // this SHOULD mutate this.sessions[i]
+      return await this.api.put(`/sessions/${sess.id}`, sess); // dangerous, because this promise could take a long while to finish actually
+    } else {
+      return await saveSessionsSilent(this.sessions);
     }
   }
   async export() {
-    const savedSess = await saveSessionSilent(this.sessions, 'B64');
+    const savedSess = await saveSessionSilentGeneric(this.sessions, 'B64');
     return saveObjAsJSON(
       savedSess, `sessions-${Date.now()}`
     );
@@ -74,18 +132,22 @@ class SessionAPI {
   async import(f: File) {
     const stored: StoredSession[] = JSON
       .parse(await blobToText(f));
-    this.sessions = await loadSessionsSilent(stored)
+    const sessions = await loadSessionsSilent(stored)
     //
-    if (this.api) throw Error("TODO")
+    if (this.api) {
+      await this.api.delete('/sessions/', { data: {
+        confirm: 'YES I AM REALLY DELETING EVERYTHING'
+      }});
+      for (const sess of sessions) {
+        await this.fixSrcs(sess)
+        await this.append(sess)
+      }
+    }
     else {
-      return saveSessions(this.sessions);
+      return await saveSessionsSilent(this.sessions);
     }
   }
   // end weird functions
-  async upload_image(f: File) {
-    if (this.api) throw Error("TODO")
-    return blobToOURL(f)
-  }
 }
 
 interface StoredSession extends Omit<SessionState,'imgs'> {
@@ -102,13 +164,7 @@ async function loadSessionsSilent(compSessions: StoredSession[]) {
   return sessions;
 }
 
-function loadSessions() {
-  const p = LF.getItem('sessions').then(loadSessionsSilent);
-  notifyPromise(p, 'loading saved sessions...');
-  return p
-}
-
-async function saveSessionSilent(sessions: SessionState[], type: 'Blob' | 'B64') {
+async function saveSessionSilentGeneric(sessions: SessionState[], type: 'Blob' | 'B64') {
   const meth = (r: ReducedImages) => (
     type === 'Blob' ? r.intoBlobs() :
                       r.intoB64()
@@ -122,12 +178,10 @@ async function saveSessionSilent(sessions: SessionState[], type: 'Blob' | 'B64')
   }));
 }
 
-
-function saveSessions(sessions: SessionState[]) {
-  const p = saveSessionSilent(sessions, "Blob")
-    .then(res => LF.setItem('sessions', res));
-  notifyPromise(p, 'saving sessions...');
-  return p
+async function saveSessionsSilent(sessions: SessionState[]) {
+  const res = await saveSessionSilentGeneric(sessions, "Blob");
+  return await LF.setItem('sessions', res);
 }
 
 export {SessionAPI, StoredSession}
+
