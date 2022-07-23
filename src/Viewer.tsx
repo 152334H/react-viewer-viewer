@@ -262,10 +262,10 @@ const ViewerSession = ({sess,goBack}: {
       <div style={{float:'right'}}>
         <IconButtonSimple icon={<DeleteIcon/>}
         onClick={()=>window.confirm(`Delete the "${name}" session?`)
-          ? goBack({activeIndex: state.activeIndex, imgs: [], name})
+          ? goBack({...sess, activeIndex: state.activeIndex, imgs: [], name})
           : 0}/>
         <IconButtonSimple icon={<KeyboardReturnIcon/>}
-          onClick={()=>goBack({activeIndex: state.activeIndex, imgs: state.imgs, name})}/>
+          onClick={()=>goBack({...sess, activeIndex: state.activeIndex, imgs: state.imgs, name})}/>
       </div>
       <div style={{clear:'both', float:'right'}}>
         <FormControlLabel label="Focused" control={
