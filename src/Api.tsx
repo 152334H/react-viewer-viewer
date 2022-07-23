@@ -28,7 +28,7 @@ class SessionAPI {
           headers: {
             'Authorization': `bearer ${token}`
           },
-          timeout: 1000,
+          timeout: 30000,
           validateStatus: (stat: number) =>
             (200 <= stat && stat < 300) || (stat === 409),
         });
