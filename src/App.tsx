@@ -19,7 +19,6 @@ import * as React from 'react';
 import {createTheme, ThemeProvider} from '@mui/material/styles'
 import Box from '@mui/material/Box';
 import CssBaseline from '@mui/material/CssBaseline';
-import InputBase from '@mui/material/InputBase';
 import List from '@mui/material/List';
 import ListItem from '@mui/material/ListItem';
 import ListItemText from '@mui/material/ListItemText';
@@ -42,7 +41,6 @@ import {IconButtonSimple,UploadButton} from './UI'
 import {SessionAPI} from './Api';
 import {IconButton, InputAdornment, TextField} from '@mui/material';
 import {Visibility, VisibilityOff} from '@mui/icons-material';
-import AwesomeDebouncePromise from 'awesome-debounce-promise';
 
 const SaveSessionsButton = ({save}: {
   save: () => void,
@@ -148,9 +146,11 @@ const RealApp = ({api,logout}: {
         api.remove(i);
         setSessions(api.sessions.slice())
     }} load={(f: File) => {
-        api.import(f).then(
-          () => setSessions(api.sessions.slice())
-        )
+        if (window.confirm("WARNING: YOU ARE ABOUT TO DELETE EVERYTHING\nCLOSE THE PAGE IF THIS IS UNDESIRED")) {
+          api.import(f).then(
+            () => setSessions(api.sessions.slice())
+          )
+        } else throw Error("stopped that")
     }} save={() => api.export()} logout={logout}
     sessions={sessions}/> :
     <ViewerSession sess={api.sessions[vind]}
