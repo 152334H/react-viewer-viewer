@@ -15,7 +15,7 @@ const readerProducer = (
   })
 )
 
-const URLToBlob = (url:imURL) => fetch(url).then(res => res.blob());
+export const URLToBlob = (url:imURL) => fetch(url, {credentials: 'include'}).then(res => res.blob());
 export const blobToOURL = (blob:Blob) => URL.createObjectURL(blob);
 const blobToB64 = readerProducer(r => r.readAsDataURL) as (b:Blob) => Promise<string>;
 export const blobToText = readerProducer(r => r.readAsText) as (b:Blob) => Promise<string>;
