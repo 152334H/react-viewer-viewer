@@ -227,7 +227,8 @@ const ViewerSession = ({sess,goBack}: {
 }) => {
   const [name, setName] = React.useState(sess.name);
   const [state, dispatch] = React.useReducer(sessReducer, {
-    show: false, activeIndex: sess.activeIndex, imgs: sess.imgs
+    show: false, activeIndex: sess.activeIndex,
+    imgs: sess.imgs.map((im,alt) => ({...im, alt}))
   });
   const [manualUpdate, setManualUpdate] = React.useState(0);
   if (state.show === false && manualUpdate !== 0) { setManualUpdate(0); }
@@ -265,7 +266,14 @@ const ViewerSession = ({sess,goBack}: {
           ? goBack({...sess, activeIndex: state.activeIndex, imgs: [], name})
           : 0}/>
         <IconButtonSimple icon={<KeyboardReturnIcon/>}
-          onClick={()=>goBack({...sess, activeIndex: state.activeIndex, imgs: state.imgs, name})}/>
+          onClick={() => goBack({
+            ...sess, activeIndex: state.activeIndex, name,
+            imgs: state.imgs.map(im => {
+              delete im.alt
+              return im
+            }),
+          })}
+        />
       </div>
       <div style={{clear:'both', float:'right'}}>
         <FormControlLabel label="Focused" control={
